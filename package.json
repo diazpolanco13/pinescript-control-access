@@ -5,13 +5,20 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:cluster": "node src/cluster.js",
     "dev": "nodemon src/server.js",
+    "dev:cluster": "nodemon src/cluster.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:bulk": "node scripts/real-users-test.js",
     "test:performance": "node scripts/bulk-test.js",
+    "test:cluster": "MAX_WORKERS=2 npm run test",
     "lint": "eslint src/**/*.js",
-    "lint:fix": "eslint src/**/*.js --fix"
+    "lint:fix": "eslint src/**/*.js --fix",
+    "pm2:start": "pm2 start src/cluster.js --name tradingview-api",
+    "pm2:stop": "pm2 stop tradingview-api",
+    "pm2:restart": "pm2 restart tradingview-api",
+    "pm2:delete": "pm2 delete tradingview-api"
   },
   "keywords": [
     "tradingview",
