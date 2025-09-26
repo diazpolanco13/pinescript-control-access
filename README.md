@@ -148,12 +148,24 @@ npm run test:bulk
 
 ## 📡 API Endpoints
 
-### Validación de Usuario
+### 📋 **Códigos de Estado**
+- `200` - Éxito
+- `400` - Error de validación
+- `422` - Usuario inválido o rate limit
+- `429` - Rate limit excedido
+- `500` - Error interno del servidor
+
+### 👤 Validación de Usuario
 ```http
 GET /api/validate/:username
 ```
 
-**Respuesta:**
+**Descripción:** Verifica si un usuario existe en TradingView
+
+**Parámetros:**
+- `username` (string) - Nombre de usuario de TradingView
+
+**Respuesta de Éxito (200):**
 ```json
 {
   "validuser": true,
@@ -161,70 +173,310 @@ GET /api/validate/:username
 }
 ```
 
-### Consulta de Acceso
+**Respuesta de Error (422):**
+```json
+{
+  "errorMessage": "Username validation failed",
+  "details": "User does not exist"
+}
+```
+
+### 🔍 Consulta de Acceso
 ```http
 GET /api/access/:username
 ```
 
-**Body:**
+**Descripción:** Consulta el acceso actual de un usuario a indicadores
+
+**Parámetros:**
+- `username` (string) - Nombre de usuario de TradingView
+
+**Body (opcional):**
 ```json
 {
-  "pine_ids": ["PUB;your_pine_id"]
+  "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
 }
 ```
 
-### Conceder Acceso
+**Respuesta de Éxito (200):**
+```json
+{
+  "username": "trendoscope",
+  "access_details": [
+    {
+      "pine_id": "PUB;ebd861d70a9f478bb06fe60c5d8f469c",
+      "expiration_date": "2025-10-01T00:00:00Z",
+      "has_access": true,
+      "days_remaining": 15
+    }
+  ]
+}
+```
+
+### ➕ Conceder Acceso
 ```http
 POST /api/access/:username
 ```
 
+**Descripción:** Concede acceso temporal a indicadores para un usuario
+
+**Parámetros:**
+- `username` (string) - Nombre de usuario de TradingView
+
 **Body:**
 ```json
 {
-  "pine_ids": ["PUB;your_pine_id"],
+  "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
   "duration": "7D"
 }
 ```
 
-### Remover Acceso
+**Formatos de Duración:**
+- `"7D"` - 7 días
+- `"30D"` - 30 días
+- `"90D"` - 90 días
+- `"1Y"` - 1 año
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "status": "Success",
+  "message": "Access granted successfully",
+  "details": {
+    "username": "trendoscope",
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "expiration_date": "2025-10-03T08:45:30Z",
+    "granted_at": "2025-09-26T08:45:30Z"
+  }
+}
+```
+
+### ➖ Remover Acceso
 ```http
 DELETE /api/access/:username
 ```
 
-### Acceso Masivo (⭐ Feature Premium)
+**Descripción:** Remueve el acceso de un usuario a indicadores específicos
+
+**Parámetros:**
+- `username` (string) - Nombre de usuario de TradingView
+
+**Body:**
+```json
+{
+  "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
+}
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "status": "Success",
+  "message": "Access removed successfully",
+  "details": {
+    "username": "trendoscope",
+    "pine_ids_removed": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "removed_at": "2025-09-26T08:45:30Z"
+  }
+}
+```
+
+### 🚀 Acceso Masivo (⭐ Feature Premium)
 ```http
 POST /api/access/bulk
 ```
+
+**Descripción:** Operación masiva para conceder acceso a múltiples usuarios (optimizado con intelligent batching)
 
 **Body:**
 ```json
 {
   "users": ["user1", "user2", "user3"],
-  "pine_ids": ["PUB;id1", "PUB;id2"],
+  "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
   "duration": "7D",
   "options": {
-    "batchSize": 10,
-    "delayMs": 200
+    "preValidateUsers": true,
+    "onProgress": true
+  }
+}
+```
+
+**Opciones Avanzadas:**
+```json
+{
+  "preValidateUsers": true,    // Validar usuarios antes de procesar
+  "onProgress": true,          // Reportar progreso en logs
+  "maxRetries": 3             // Máximo reintentos por operación
+}
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "total": 3,
+  "success": 3,
+  "errors": 0,
+  "duration": 2450,
+  "successRate": 100,
+  "skippedUsers": [],
+  "totalUsersAttempted": 3,
+  "validUsersProcessed": 3,
+  "batcherStats": {
+    "batchesProcessed": 2,
+    "avgResponseTime": 387,
+    "finalDelay": 1500,
+    "circuitBreakerActivated": false
   }
 }
 ```
 
 ## 🧪 Testing y Ejemplos
 
-### Prueba Básica
+### 🚀 Inicio Rápido (3 comandos)
+
 ```bash
-# Validar usuario
+# 1. Iniciar servidor
+npm start
+
+# 2. Validar que funciona
 curl "http://localhost:5000/api/validate/trendoscope"
 
-# Conceder acceso
+# 3. Conceder acceso de prueba
 curl -X POST "http://localhost:5000/api/access/trendoscope" \
   -H "Content-Type: application/json" \
   -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
 ```
 
-### Prueba de Rendimiento Masivo
+### 📋 Ejemplos Completos por Endpoint
+
+#### 👤 Validar Usuario
 ```bash
+# Verificar si usuario existe
+curl -s "http://localhost:5000/api/validate/trendoscope" | jq
+```
+
+#### 🔍 Consultar Acceso Actual
+```bash
+# Ver todo el acceso del usuario
+curl -s "http://localhost:5000/api/access/trendoscope" | jq
+
+# Ver acceso a indicadores específicos
+curl -X GET "http://localhost:5000/api/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]}' | jq
+```
+
+#### ➕ Conceder Acceso
+```bash
+# Acceso por 7 días
+curl -X POST "http://localhost:5000/api/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "duration": "7D"
+  }' | jq
+
+# Acceso por 30 días
+curl -X POST "http://localhost:5000/api/access/johndoe" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "duration": "30D"
+  }' | jq
+```
+
+#### ➖ Remover Acceso
+```bash
+# Remover acceso a indicadores específicos
+curl -X DELETE "http://localhost:5000/api/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
+  }' | jq
+```
+
+#### 🚀 Operación Masiva (⭐ Recomendado)
+```bash
+# Conceder acceso a múltiples usuarios
+curl -X POST "http://localhost:5000/api/access/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "users": ["user1", "user2", "user3"],
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "duration": "7D",
+    "options": {
+      "preValidateUsers": true,
+      "onProgress": true
+    }
+  }' | jq
+```
+
+### 🧪 Scripts de Testing Automatizados
+
+```bash
+# Estado completo del sistema
+npm run status
+
+# Benchmark de rendimiento (10 seg)
+npm run quick-benchmark
+
+# Test controlado con 5 usuarios (30 seg)
+npm run controlled-test
+
+# Test completo del sistema (2-3 min)
+npm run smart-test
+
+# Test con todos los usuarios disponibles
 npm run test:bulk
+```
+
+### 🔧 Testing con Postman/Insomnia
+
+**Collection JSON:**
+```json
+{
+  "name": "TradingView Access Management",
+  "requests": [
+    {
+      "name": "Validate User",
+      "method": "GET",
+      "url": "http://localhost:5000/api/validate/{{username}}"
+    },
+    {
+      "name": "Grant Access",
+      "method": "POST",
+      "url": "http://localhost:5000/api/access/{{username}}",
+      "headers": {"Content-Type": "application/json"},
+      "body": {
+        "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+        "duration": "7D"
+      }
+    },
+    {
+      "name": "Bulk Access",
+      "method": "POST",
+      "url": "http://localhost:5000/api/access/bulk",
+      "headers": {"Content-Type": "application/json"},
+      "body": {
+        "users": ["user1", "user2"],
+        "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+        "duration": "7D"
+      }
+    }
+  ]
+}
+```
+
+### ⚠️ Manejo de Errores
+
+```bash
+# Usuario inválido
+curl -s "http://localhost:5000/api/validate/usuarioquenoexiste" | jq
+# {"errorMessage":"Username validation failed","details":"User does not exist"}
+
+# Rate limit excedido
+# Respuesta: 429 Too Many Requests
+# Esperar automáticamente gracias al circuit breaker
 ```
 
 ## ⚙️ Configuración
