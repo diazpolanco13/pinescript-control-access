@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:bulk": "node scripts/bulk-test.js",
+    "test:bulk": "node scripts/real-users-test.js",
+    "test:performance": "node scripts/bulk-test.js",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix"
   },
@@ -46,7 +47,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/diazpolanco13/Tradingview-Access-Management-base.git",
-    "directory": "feature/nodejs-bulk-access"
+    "url": "https://github.com/diazpolanco13/Tradingview-Access-Management-base.git"
   }
 }
