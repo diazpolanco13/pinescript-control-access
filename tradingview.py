@@ -1,11 +1,42 @@
 import os
-from replit import db
+import json
 import config
 import requests
 import platform
 from urllib3 import encode_multipart_formdata
 from datetime import datetime, timezone
 import helper
+
+# Reemplazo simple para Replit DB en entorno local
+class SimpleDB:
+    def __init__(self, file_path='session_db.json'):
+        self.file_path = file_path
+        self.data = {}
+        self.load()
+
+    def load(self):
+        try:
+            with open(self.file_path, 'r') as f:
+                self.data = json.load(f)
+        except FileNotFoundError:
+            self.data = {}
+
+    def save(self):
+        with open(self.file_path, 'w') as f:
+            json.dump(self.data, f)
+
+    def __getitem__(self, key):
+        return self.data.get(key)
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+        self.save()
+
+    def keys(self):
+        return self.data.keys()
+
+# Usar SimpleDB en lugar de Replit DB
+db = SimpleDB()
 
 
 class tradingview:
