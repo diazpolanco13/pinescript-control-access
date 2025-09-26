@@ -7,7 +7,8 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const os = require('os');
-const http2wrapper = require('http2-wrapper');
+const https = require('https');
+const http = require('http');
 const { urls } = require('../../config/urls');
 const config = require('../../config');
 const sessionStorage = require('../utils/sessionStorage');
@@ -15,50 +16,59 @@ const { getAccessExtension, parseDuration, getCurrentUTCDate } = require('../uti
 const { authLogger, apiLogger, bulkLogger } = require('../utils/logger');
 
 /**
- * 🚀 HTTP/2 Connection Pooling Configuration
- * Optimizes connections to TradingView for 60% less latency
+ * 🚀 HTTP/1.1 Connection Pooling Configuration (Optimized)
+ * Optimizes connections to TradingView for reduced latency and better performance
  */
-const http2Agent = new http2wrapper.Agent({
-  maxSessions: 100,          // Máximo sesiones concurrentes
-  maxFreeSessions: 10,       // Sesiones libres mantenidas
-  timeout: 5000,             // Timeout de conexión (5s)
-  keepAlive: true,           // Mantener conexiones vivas
-  keepAliveMsecs: 30000,     // Intervalo keep-alive (30s)
-  maxSockets: 10,            // Máximo sockets por host
-  maxFreeSockets: 256,       // Máximo sockets libres
-  scheduling: 'lifo'         // Last In, First Out para mejor rendimiento
+
+// Configurar axios con connection pooling optimizado
+axios.defaults.httpsAgent = new https.Agent({
+  keepAlive: true,              // Mantener conexiones vivas
+  keepAliveMsecs: 30000,        // 30 segundos keep-alive
+  maxSockets: 50,               // Máximo 50 conexiones por host
+  maxFreeSockets: 10,           // 10 sockets libres mantenidos
+  timeout: 10000,               // 10 segundos timeout
+  scheduling: 'lifo'            // Last In, First Out para bulk operations
 });
 
-// Configurar axios para usar HTTP/2 agent (si está habilitado)
-if (process.env.USE_HTTP2 !== 'false') {
-  axios.defaults.httpAgent = http2Agent;
-  axios.defaults.httpsAgent = http2Agent;
-  axios.defaults.timeout = 10000; // 10 segundos timeout por request
-} else {
-  // Configuración sin HTTP/2 para comparación
-  axios.defaults.timeout = 15000; // Timeout más largo sin pooling
-  apiLogger.info('HTTP/2 Connection Pooling deshabilitado (comparación)');
-}
+axios.defaults.httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 10000,
+  scheduling: 'lifo'
+});
+
+axios.defaults.timeout = 15000; // 15 segundos timeout por request
 
 apiLogger.info({
-  maxSessions: http2Agent.maxSessions,
-  maxFreeSessions: http2Agent.maxFreeSessions,
-  timeout: 5000,
-  keepAlive: true
-}, '🚀 HTTP/2 Connection Pooling initialized');
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 10000
+}, '🚀 HTTP Connection Pooling Optimized initialized');
 
 /**
- * Monitor HTTP/2 Connection Pool Status
+ * Monitor HTTP Connection Pool Status
  * Logs pool statistics every 60 seconds
  */
 setInterval(() => {
-  const stats = {
-    activeSessions: http2Agent.sockets ? Object.keys(http2Agent.sockets).length : 0,
-    freeSockets: http2Agent.freeSockets ? Object.keys(http2Agent.freeSockets).length : 0,
-    pendingRequests: http2Agent.requests ? Object.keys(http2Agent.requests).length : 0
+  const httpsStats = {
+    activeSockets: axios.defaults.httpsAgent.sockets ? Object.keys(axios.defaults.httpsAgent.sockets).length : 0,
+    freeSockets: axios.defaults.httpsAgent.freeSockets ? Object.keys(axios.defaults.httpsAgent.freeSockets).length : 0,
+    pendingRequests: axios.defaults.httpsAgent.requests ? Object.keys(axios.defaults.httpsAgent.requests).length : 0,
+    totalSockets: axios.defaults.httpsAgent.totalSocketCount || 0
   };
 
-  apiLogger.debug(stats, 'HTTP/2 Connection Pool Stats');
+  const httpStats = {
+    activeSockets: axios.defaults.httpAgent.sockets ? Object.keys(axios.defaults.httpAgent.sockets).length : 0,
+    freeSockets: axios.defaults.httpAgent.freeSockets ? Object.keys(axios.defaults.httpAgent.freeSockets).length : 0,
+    pendingRequests: axios.defaults.httpAgent.requests ? Object.keys(axios.defaults.httpAgent.requests).length : 0,
+    totalSockets: axios.defaults.httpAgent.totalSocketCount || 0
+  };
+
+  apiLogger.debug({ https: httpsStats, http: httpStats }, 'HTTP Connection Pool Stats');
 }, 60000); // Log cada minuto
 
 class TradingViewService {
