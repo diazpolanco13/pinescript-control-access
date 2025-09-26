@@ -175,6 +175,14 @@ tvpassword = "tu_contraseña_tradingview"
 
 ### **🚀 Inicio Rápido de Testing:**
 
+#### **0. Indicador de Prueba Disponible:**
+Para facilitar el testing, tienes disponible un indicador de prueba:
+
+**Pine ID de Testing:** `PUB;ebd861d70a9f478bb06fe60c5d8f469c`
+- **Cuenta Owner:** `apidev7loper@gmail.com`
+- **Estado:** ✅ Funcional y probado
+- **Uso:** Puedes conceder/revocar acceso a este indicador
+
 #### **1. Configurar Variables de Entorno:**
 ```bash
 export tvusername="apidev7loper@gmail.com"
@@ -239,6 +247,37 @@ python3 test_tradingview.py
 # En test_tradingview.py - líneas 5-6 (SOLO PARA TESTING)
 os.environ['tvusername'] = 'apidev7loper@gmail.com'
 os.environ['tvpassword'] = '!jBmb(+1+LSH-aJ\'h;cB'
+```
+
+### **🎯 Indicadores de Prueba Disponibles:**
+
+Para que puedas probar inmediatamente el sistema, aquí tienes un indicador funcional:
+
+| Pine ID | Estado | Descripción |
+|---------|--------|-------------|
+| `PUB;ebd861d70a9f478bb06fe60c5d8f469c` | ✅ Activo | Indicador de testing funcional |
+
+**Credenciales para testing:**
+- **Usuario:** `apidev7loper@gmail.com`
+- **Contraseña:** `!jBmb(+1+LSH-aJ'h;cB`
+- **Usuario de prueba:** `trendoscope` (usuario válido para recibir acceso)
+
+**Ejemplo rápido de testing:**
+```bash
+# 1. Verificar estado actual
+curl -X GET "http://localhost:5000/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]}'
+
+# 2. Conceder acceso por 7 días
+curl -X POST "http://localhost:5000/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
+
+# 3. Verificar que se concedió acceso
+curl -X GET "http://localhost:5000/access/trendoscope" \
+  -H "Content-Type: application/json" \
+  -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]}'
 ```
 
 ## 🐛 Troubleshooting - Problemas Comunes
