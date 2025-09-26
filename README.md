@@ -486,21 +486,50 @@ curl -X POST "http://localhost:5000/api/access/bulk-remove" \
   }'
 ```
 
-**Respuesta optimizada:**
+### 🔄 **Reemplazar Acceso (⭐ NUEVO - Para Cambios de Plan)**
+```bash
+# Cambiar plan: Remover acceso actual + Añadir nuevo (workflow automático)
+curl -X POST "http://localhost:5000/api/access/replace" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "users": ["usuario1", "usuario2"],
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "duration": "30D",
+    "options": {
+      "preValidateUsers": false
+    }
+  }'
+```
+
+**Casos de uso ideales para `/replace`:**
+- ✅ **Downgrade**: LIFETIME → Plan mensual
+- ✅ **Cambio de plan**: 6 meses → 1 mes
+- ✅ **Corrección**: Plan incorrecto → Plan correcto
+- ✅ **Renovación controlada**: Reset + nuevo período
+
+**Respuesta detallada:**
 ```json
 {
-  "total": 3,
-  "success": 3,
+  "total": 2,
+  "success": 2,
   "errors": 0,
-  "duration": "1.2s",
+  "duration": 4500,
   "successRate": 100,
-  "results": [
-    {
-      "pine_id": "PUB;ebd861d70a9f478bb06fe60c5d8f469c",
-      "username": "usuario1",
-      "status": "Success"
+  "operation": "REPLACE",
+  "phases": {
+    "remove": {
+      "success": 2,
+      "errors": 0,
+      "duration": 2100,
+      "successRate": 100
+    },
+    "add": {
+      "success": 2,
+      "errors": 0,
+      "duration": 2400,
+      "successRate": 100
     }
-  ]
+  }
 }
 ```
 
@@ -694,9 +723,11 @@ POST /api/access/bulk
 - 🔄 **Cancelaciones**: Requiere remove explícito
 - 🔄 **Correcciones**: Plan incorrecto aplicado
 
-#### 💡 **Próxima Funcionalidad**
-- 🚧 **Endpoint `/replace`**: Automatizará el workflow de cambio de plan
-- 🚧 **Plan Management**: Gestión inteligente de upgrades/downgrades
+#### ✅ **Funcionalidad Implementada**  
+- ✅ **Endpoint `/replace`**: Automatiza el workflow de cambio de plan
+- ✅ **Plan Management**: Gestión inteligente de upgrades/downgrades
+- ✅ **Workflow de 2 fases**: Remove + Add con reporte detallado
+- ✅ **Manejo de errores**: Logging detallado por fase de la operación
 
 ## 🐛 Troubleshooting
 

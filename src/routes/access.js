@@ -12,7 +12,195 @@ const { parseDuration } = require('../utils/dateHelper');
 const { apiLogger, bulkLogger } = require('../utils/logger');
 const { tradingViewLimiter, bulkLimiter } = require('../middleware/rateLimit');
 
-// Endpoint duplicado eliminado - usando solo /bulk optimizado
+/**
+ * POST /access/replace  
+ * Replace user access (remove current + add new) for plan changes
+ * Solves TradingView's additive time limitation
+ */
+router.post('/replace', bulkLimiter, async (req, res) => {
+  try {
+    const { users, pine_ids, duration, options = {} } = req.body;
+
+    if (!users || !Array.isArray(users)) {
+      return res.status(400).json({
+        error: 'users array is required'
+      });
+    }
+
+    if (!pine_ids || !Array.isArray(pine_ids)) {
+      return res.status(400).json({
+        error: 'pine_ids array is required'
+      });
+    }
+
+    if (!duration) {
+      return res.status(400).json({
+        error: 'duration is required (e.g., "7D", "1M", "1L")'
+      });
+    }
+
+    // Validate duration format
+    try {
+      parseDuration(duration);
+    } catch (error) {
+      return res.status(400).json({
+        error: `Invalid duration format: ${duration}. Use format like "7D", "1M", "1L"`
+      });
+    }
+
+    const totalOperations = users.length * pine_ids.length;
+    const startTime = Date.now();
+
+    bulkLogger.info({
+      usersCount: users.length,
+      pineIdsCount: pine_ids.length,
+      totalOperations,
+      duration,
+      operation: 'REPLACE'
+    }, 'Starting REPLACE operation (remove + add)');
+
+    // STEP 1: Remove current access
+    let removeResults = null;
+    let removeTime = 0;
+
+    try {
+      const removeStart = Date.now();
+      removeResults = await tradingViewService.bulkRemoveAccess(
+        users,
+        pine_ids,
+        {
+          ...options,
+          preValidateUsers: options.preValidateUsers ?? false
+        }
+      );
+      removeTime = Date.now() - removeStart;
+
+      bulkLogger.info({
+        removeSuccess: removeResults.success,
+        removeErrors: removeResults.errors,
+        removeTime,
+        operation: 'REPLACE-REMOVE'
+      }, 'REPLACE: Remove phase completed');
+    } catch (error) {
+      bulkLogger.error({
+        error: error.message,
+        phase: 'REMOVE',
+        operation: 'REPLACE'
+      }, 'REPLACE: Remove phase failed');
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Replace operation failed during remove phase',
+        details: error.message,
+        phase: 'REMOVE'
+      });
+    }
+
+    // STEP 2: Add new access
+    let addResults = null;
+    let addTime = 0;
+
+    try {
+      const addStart = Date.now();
+      addResults = await tradingViewService.bulkGrantAccess(
+        users,
+        pine_ids,
+        duration,
+        {
+          ...options,
+          preValidateUsers: false // Already processed in remove
+        }
+      );
+      addTime = Date.now() - addStart;
+
+      bulkLogger.info({
+        addSuccess: addResults.success,
+        addErrors: addResults.errors,
+        addTime,
+        operation: 'REPLACE-ADD'
+      }, 'REPLACE: Add phase completed');
+    } catch (error) {
+      bulkLogger.error({
+        error: error.message,
+        phase: 'ADD',
+        operation: 'REPLACE',
+        removeResults: {
+          success: removeResults.success,
+          errors: removeResults.errors
+        }
+      }, 'REPLACE: Add phase failed - users may have been removed without new access');
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Replace operation failed during add phase',
+        details: error.message,
+        phase: 'ADD',
+        removeResults: {
+          success: removeResults.success,
+          errors: removeResults.errors,
+          duration: removeTime
+        }
+      });
+    }
+
+    // Combine results
+    const totalDuration = Date.now() - startTime;
+    const totalSuccess = Math.min(removeResults.success, addResults.success);
+    const totalErrors = Math.max(removeResults.errors, addResults.errors);
+    
+    const result = {
+      total: totalOperations,
+      success: totalSuccess,
+      errors: totalErrors,
+      duration: totalDuration,
+      successRate: Math.round((totalSuccess / totalOperations) * 100),
+      operation: 'REPLACE',
+      phases: {
+        remove: {
+          success: removeResults.success,
+          errors: removeResults.errors,
+          duration: removeTime,
+          successRate: removeResults.successRate
+        },
+        add: {
+          success: addResults.success,
+          errors: addResults.errors,
+          duration: addTime,
+          successRate: addResults.successRate
+        }
+      },
+      skippedUsers: addResults.skippedUsers || [],
+      totalUsersAttempted: users.length,
+      validUsersProcessed: addResults.validUsersProcessed
+    };
+
+    bulkLogger.info({
+      totalOperations,
+      totalSuccess,
+      totalErrors,
+      totalDuration,
+      successRate: result.successRate,
+      operation: 'REPLACE'
+    }, 'REPLACE operation completed successfully');
+
+    res.json(result);
+
+  } catch (error) {
+    bulkLogger.error({
+      error: error.message,
+      usersCount: req.body.users?.length,
+      pineIdsCount: req.body.pine_ids?.length,
+      operation: 'REPLACE'
+    }, 'REPLACE operation failed');
+
+    res.status(500).json({
+      success: false,
+      error: 'Replace operation failed',
+      details: error.message,
+      operation: 'REPLACE'
+    });
+  }
+});
 
 /**
  * POST /access/bulk-remove

@@ -74,7 +74,8 @@ app.get('/', (req, res) => {
       validate: 'GET /api/validate/:username',
       access: 'GET|POST|DELETE /api/access/:username',
       bulk: 'POST /api/access/bulk (OPTIMIZED)',
-      bulkRemove: 'POST /api/access/bulk-remove'
+      bulkRemove: 'POST /api/access/bulk-remove',
+      replace: 'POST /api/access/replace (NEW: Plan Changes)'
     }
   });
 });
