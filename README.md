@@ -426,7 +426,67 @@ class SessionStorage:
 
 # Instalación
 
-Siga los pasos a continuación para instalar y ejecutar el servicio API
+## 🚀 **Inicio Rápido - Ubuntu/Debian Linux**
+
+### **1. Clonar el repositorio:**
+```bash
+git clone https://github.com/diazpolanco13/Tradingview-Access-Management-base.git
+cd Tradingview-Access-Management-base
+```
+
+### **2. Instalar Python 3.8+ (si no tienes):**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+
+# Verificar versión
+python3 --version  # Debe ser 3.8 o superior
+```
+
+### **3. Crear y activar entorno virtual:**
+```bash
+# Crear entorno virtual
+python3 -m venv venv
+
+# Activar entorno virtual
+source venv/bin/activate
+```
+
+### **4. Instalar dependencias:**
+```bash
+# Instalar paquetes requeridos
+pip install flask requests urllib3 python-dateutil
+```
+
+### **5. Configurar variables de entorno:**
+```bash
+# Configurar credenciales de TradingView
+export tvusername="tu_usuario_tradingview"
+export tvpassword="tu_contraseña_tradingview"
+
+# O usar las credenciales de testing incluidas
+export tvusername="apidev7loper@gmail.com"
+export tvpassword="!jBmb(+1+LSH-aJ'h;cB"
+```
+
+### **6. Ejecutar el servidor:**
+```bash
+# Ejecutar la aplicación
+python3 main.py
+```
+
+### **7. Verificar funcionamiento:**
+```bash
+# En otra terminal, probar el endpoint básico
+curl http://localhost:5000/
+
+# Deberías ver: "Your bot is alive!"
+```
+
+---
+
+## ☁️ **Despliegue en Replit (Alternativo)**
 
 ### Clonar repositorio en Replit
 
@@ -448,6 +508,33 @@ Simplemente ejecuta el repl y tus servicios estarán funcionando. Obtendrás el 
 
 ```
 https://Tradingview-Access-Management.[TU_CUENTA_REPL].repl.co
+```
+
+---
+
+## 🐳 **Despliegue con Docker (Opcional)**
+
+### Crear Dockerfile:
+```dockerfile
+FROM python:3.8-slim
+
+WORKDIR /app
+COPY . .
+
+RUN pip install flask requests urllib3 python-dateutil
+
+EXPOSE 5000
+
+CMD ["python3", "main.py"]
+```
+
+### Ejecutar con Docker:
+```bash
+# Construir imagen
+docker build -t tradingview-access .
+
+# Ejecutar contenedor
+docker run -p 5000:5000 -e tvusername="tu_usuario" -e tvpassword="tu_password" tradingview-access
 ```
 
 # Uso
