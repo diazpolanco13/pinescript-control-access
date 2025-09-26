@@ -233,6 +233,14 @@ source venv/bin/activate
 python3 test_tradingview.py
 ```
 
+**⚠️ IMPORTANTE:** El archivo `test_tradingview.py` contiene credenciales hardcodeadas para facilitar el testing en desarrollo. **NO usar en producción.**
+
+```python
+# En test_tradingview.py - líneas 5-6 (SOLO PARA TESTING)
+os.environ['tvusername'] = 'apidev7loper@gmail.com'
+os.environ['tvpassword'] = '!jBmb(+1+LSH-aJ\'h;cB'
+```
+
 ## 🐛 Troubleshooting - Problemas Comunes
 
 ### **❌ "validuser: false" al validar usuarios:**
