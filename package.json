@@ -18,7 +18,11 @@
     "pm2:start": "pm2 start src/cluster.js --name tradingview-api",
     "pm2:stop": "pm2 stop tradingview-api",
     "pm2:restart": "pm2 restart tradingview-api",
-    "pm2:delete": "pm2 delete tradingview-api"
+    "pm2:delete": "pm2 delete tradingview-api",
+    "quick-benchmark": "node scripts/quick-benchmark.js",
+    "smart-test": "node scripts/smart-bulk-test.js",
+    "controlled-test": "node scripts/controlled-test.js",
+    "status": "node scripts/status-check.js"
   },
   "keywords": [
     "tradingview",
