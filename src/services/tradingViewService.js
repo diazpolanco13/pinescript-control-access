@@ -77,15 +77,15 @@ class TradingViewService {
     this.sessionId = null;
     this.initialized = false;
 
-    // Initialize intelligent request batcher (TradingView-optimized)
+    // Initialize intelligent request batcher (OPTIMIZED for performance)
     this.requestBatcher = new RequestBatcher({
-      maxConcurrent: 2,    // REDUCIDO: 2 requests in parallel (más conservador)
-      batchSize: 3,        // REDUCIDO: 3 requests per batch
-      minDelay: 1500,      // AUMENTADO: 1.5s between batches (TradingView-friendly)
-      maxDelay: 30000,     // AUMENTADO: Max 30s delay for backoff
-      backoffMultiplier: 2.0, // Más agresivo backoff
-      circuitBreakerThreshold: 2, // MÁS SENSIBLE: Open circuit after 2 failures
-      circuitBreakerTimeout: 60000 // MÁS TIEMPO: 60s circuit open
+      maxConcurrent: 4,    // OPTIMIZADO: 4 requests in parallel 
+      batchSize: 8,        // OPTIMIZADO: 8 requests per batch
+      minDelay: 300,       // OPTIMIZADO: 300ms between batches (balanceado)
+      maxDelay: 15000,     // REDUCIDO: Max 15s delay for backoff
+      backoffMultiplier: 1.5, // Menos agresivo backoff
+      circuitBreakerThreshold: 3, // BALANCEADO: Open circuit after 3 failures
+      circuitBreakerTimeout: 30000 // REDUCIDO: 30s circuit open
     });
   }
 
@@ -409,12 +409,12 @@ class TradingViewService {
    * Pre-validate users before bulk operations
    */
   async validateUsersBatch(users, options = {}) {
-    const { maxConcurrent = 3 } = options;
+    const { maxConcurrent = 8 } = options; // OPTIMIZADO: Más concurrencia
     const results = new Map();
 
     bulkLogger.info(`🔍 Pre-validating ${users.length} users before bulk operations`);
 
-    // Process in smaller concurrent batches
+    // Process in optimized concurrent batches
     for (let i = 0; i < users.length; i += maxConcurrent) {
       const batch = users.slice(i, i + maxConcurrent);
       const batchPromises = batch.map(async (user) => {
@@ -431,9 +431,9 @@ class TradingViewService {
 
       await Promise.allSettled(batchPromises);
 
-      // Small delay between batches to be gentle with TradingView
+      // OPTIMIZADO: Reduced delay between batches
       if (i + maxConcurrent < users.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 150)); // REDUCIDO de 500ms a 150ms
       }
     }
 
@@ -462,7 +462,7 @@ class TradingViewService {
   async bulkGrantAccess(users, pineIds, duration, options = {}) {
     const {
       onProgress = null,
-      preValidateUsers = true
+      preValidateUsers = false // OPTIMIZADO: Default false para mejor rendimiento
     } = options;
 
     await this.init();
@@ -473,7 +473,7 @@ class TradingViewService {
 
     if (preValidateUsers && users.length > 1) {
       bulkLogger.info('🔍 Pre-validating users before bulk grant access');
-      validationResults = await this.validateUsersBatch(users, { maxConcurrent: 2 });
+      validationResults = await this.validateUsersBatch(users, { maxConcurrent: 8 }); // OPTIMIZADO
 
       usersToProcess = validationResults.validUsers;
 
@@ -666,6 +666,177 @@ class TradingViewService {
 
     } catch (error) {
       bulkLogger.logBulkError('grant-access-intelligent', error);
+      throw error;
+    }
+  }
+
+
+  // Método duplicado eliminado - usando solo bulkGrantAccess optimizado
+
+  /**
+   * Bulk Remove Access - High-performance mass access removal
+   * Uses intelligent batching with circuit breaker and retries
+   */
+  async bulkRemoveAccess(users, pine_ids, options = {}) {
+    const startTime = Date.now();
+    let processed = 0;
+    let successCount = 0;
+    let errorCount = 0;
+
+    bulkLogger.info({
+      operation: 'bulk-remove-access',
+      usersCount: users.length,
+      pineIdsCount: pine_ids.length,
+      totalOperations: users.length * pine_ids.length,
+      options
+    }, 'Starting bulk access removal');
+
+    // Pre-validate users if requested
+    let validationResults = null;
+    if (options.preValidateUsers !== false) {
+      validationResults = await this.validateUsersBatch(users, options);
+      const validUsers = validationResults.validUsers;
+      const invalidUsers = validationResults.invalidUsers;
+
+      bulkLogger.info({
+        validUsers: validUsers.length,
+        invalidUsers: invalidUsers.length,
+        skippedUsers: invalidUsers
+      }, 'User validation completed for bulk removal');
+
+      if (validUsers.length === 0) {
+        bulkLogger.warn('No valid users found for bulk removal');
+        return {
+          total: 0,
+          success: 0,
+          errors: 0,
+          duration: '0ms',
+          successRate: 0,
+          skippedUsers: invalidUsers,
+          totalUsersAttempted: users.length,
+          validUsersProcessed: 0,
+          batcherStats: this.requestBatcher.getStats()
+        };
+      }
+      users = validUsers; // Only process valid users
+    }
+
+    const usersToProcess = users;
+    const totalOperations = usersToProcess.length * pine_ids.length;
+
+    try {
+      // Build list of operations
+      const requests = [];
+      for (const user of usersToProcess) {
+        for (const pineId of pine_ids) {
+          requests.push({
+            user,
+            pineId,
+            operation: 'remove'
+          });
+        }
+      }
+
+      // Process with intelligent batching
+      const batchPromises = requests.map(async (requestData, index) => {
+        let finalResult = null;
+        let retryCount = 0;
+        const maxOperationRetries = 3;
+
+        while (retryCount < maxOperationRetries && !finalResult) {
+          try {
+            const result = await this.requestBatcher.add(
+              async () => {
+                // Get current access details first
+                const accessDetails = await this.getAccessDetails(requestData.user, requestData.pineId);
+                // Then remove access
+                return await this.removeAccess(accessDetails);
+              },
+              {
+                priority: retryCount > 0 ? 1 : 0,
+                maxRetries: retryCount > 0 ? 1 : 2
+              }
+            );
+
+            if (result && result.status === 'Success') {
+              finalResult = result;
+              successCount++;
+            } else {
+              throw new Error(result?.error || 'Unknown error');
+            }
+          } catch (error) {
+            retryCount++;
+            bulkLogger.warn({
+              error: error.message,
+              user: requestData.user,
+              pineId: requestData.pineId,
+              retryCount,
+              maxRetries: maxOperationRetries
+            }, `Bulk remove retry ${retryCount}/${maxOperationRetries}`);
+
+            if (retryCount >= maxOperationRetries) {
+              errorCount++;
+              finalResult = {
+                pine_id: requestData.pineId,
+                username: requestData.user,
+                status: 'Failure',
+                error: error.message
+              };
+            } else {
+              // Exponential backoff for retries
+              const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+              await this.delay(backoffDelay);
+            }
+          }
+        }
+
+        processed++;
+        const progress = Math.round((processed / totalOperations) * 100);
+
+        // Progress callback if provided
+        if (options.onProgress) {
+          try {
+            options.onProgress(processed, totalOperations, successCount, errorCount);
+          } catch (callbackError) {
+            bulkLogger.warn({ error: callbackError.message }, 'Progress callback failed');
+          }
+        }
+
+        return finalResult;
+      });
+
+      const results = await Promise.allSettled(batchPromises);
+      const successfulResults = results
+        .filter(result => result.status === 'fulfilled' && result.value)
+        .map(result => result.value);
+
+      const totalDuration = `${Date.now() - startTime}ms`;
+      const successRate = Math.round((successCount / processed) * 100);
+
+      bulkLogger.info({
+        totalOperations: processed,
+        successCount,
+        errorCount,
+        duration: totalDuration,
+        successRate,
+        batcherStats: this.requestBatcher.getStats()
+      }, 'Bulk access removal completed');
+
+      return {
+        total: processed,
+        success: successCount,
+        errors: errorCount,
+        duration: totalDuration,
+        successRate,
+        results: successfulResults,
+        skippedUsers: validationResults?.invalidUsers || [],
+        totalUsersAttempted: users.length,
+        validUsersProcessed: usersToProcess.length,
+        batcherStats: this.requestBatcher.getStats()
+      };
+
+    } catch (error) {
+      bulkLogger.logBulkError('remove-access-intelligent', error);
       throw error;
     }
   }

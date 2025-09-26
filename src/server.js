@@ -73,7 +73,8 @@ app.get('/', (req, res) => {
       health: 'GET /',
       validate: 'GET /api/validate/:username',
       access: 'GET|POST|DELETE /api/access/:username',
-      bulk: 'POST /api/access/bulk'
+      bulk: 'POST /api/access/bulk (OPTIMIZED)',
+      bulkRemove: 'POST /api/access/bulk-remove'
     }
   });
 });
@@ -91,6 +92,7 @@ app.use((req, res) => {
       'GET /',
       'GET /api/validate/:username',
       'GET /api/access/:username',
+      'POST /api/access/bulk-remove',
       'POST /api/access/:username',
       'DELETE /api/access/:username',
       'POST /api/access/bulk'

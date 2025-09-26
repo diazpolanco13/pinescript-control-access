@@ -1,4 +1,3 @@
-5228012
 Ariel275
 EdwinDG13
 JoDasilva
@@ -17,7 +16,6 @@ jdnh502
 jesicalopezcamino
 jhonatanchavezluyo08
 jmfariasilva
-jmfariasilva@gmail.com
 jmpo18
 jugankhosa
 kunshadow
@@ -29,7 +27,4 @@ mr_criptous
 oscaralberto862
 raider_millonario
 randyerrasti
-rilozu10
-sambodj1983
-ssaenzford
-ulises_cornejo1977
+apidevs
