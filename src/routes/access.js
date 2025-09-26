@@ -11,13 +11,17 @@ const tradingViewService = require('../services/tradingViewService');
 const { parseDuration } = require('../utils/dateHelper');
 const { apiLogger, bulkLogger } = require('../utils/logger');
 const { tradingViewLimiter, bulkLimiter } = require('../middleware/rateLimit');
+const { apiAuth } = require('../middleware/apiAuth');
+const webhookService = require('../services/webhookService');
+const alertService = require('../services/alertService');
+const backupService = require('../services/backupService');
 
 /**
  * POST /access/replace  
  * Replace user access (remove current + add new) for plan changes
  * Solves TradingView's additive time limitation
  */
-router.post('/replace', bulkLimiter, async (req, res) => {
+router.post('/replace', apiAuth, bulkLimiter, async (req, res) => {
   try {
     const { users, pine_ids, duration, options = {} } = req.body;
 
@@ -207,7 +211,7 @@ router.post('/replace', bulkLimiter, async (req, res) => {
  * Bulk remove access from multiple users for multiple pine_ids
  * High-performance endpoint for mass access revocation (e.g., expired subscriptions)
  */
-router.post('/bulk-remove', bulkLimiter, async (req, res) => {
+router.post('/bulk-remove', apiAuth, bulkLimiter, async (req, res) => {
   try {
     const { users, pine_ids, options = {} } = req.body;
 
@@ -282,7 +286,7 @@ router.post('/bulk-remove', bulkLimiter, async (req, res) => {
  * Bulk grant access to multiple users for multiple pine_ids
  * High-performance endpoint for mass operations
  */
-router.post('/bulk', bulkLimiter, async (req, res) => {
+router.post('/bulk', apiAuth, bulkLimiter, async (req, res) => {
   try {
     const { users, pine_ids, duration, options = {} } = req.body;
 
@@ -353,8 +357,30 @@ router.post('/bulk', bulkLimiter, async (req, res) => {
       batcherStats: result.batcherStats
     }, 'Intelligent bulk access grant completed');
 
+    // 📡 WEBHOOK: Notificar éxito a e-commerce
+    if (result.successRate >= 95) {
+      await webhookService.notifyBulkSuccess('bulk_grant', req.body, result);
+    } else if (result.successRate < 80) {
+      await alertService.alertLowSuccessRate('bulk_grant', result.successRate, result);
+    }
+    
+    // 💾 BACKUP: Guardar operación crítica
+    if (users.length >= 10 || result.errors > 0) {
+      await backupService.backupCriticalOperation('bulk_grant', req.body, result);
+    }
+
     res.json(result);
   } catch (error) {
+    // 🚨 ALERT: Error crítico
+    await alertService.alertSystemError(error, {
+      operation: 'bulk_grant',
+      users: req.body.users?.slice(0, 5), // Solo primeros 5 para logs
+      pine_ids: req.body.pine_ids
+    });
+    
+    // 📡 WEBHOOK: Notificar error
+    await webhookService.notifyError('bulk_grant', error, req.body);
+    
     bulkLogger.error({
       error: error.message,
       usersCount: req.body.users?.length,

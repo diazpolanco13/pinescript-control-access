@@ -15,6 +15,7 @@ const { apiLimiter } = require('./middleware/rateLimit');
 // Routes
 const validateRoutes = require('./routes/validate');
 const accessRoutes = require('./routes/access');
+const metricsRoutes = require('./routes/metrics');
 
 // Initialize Express app
 const app = express();
@@ -73,9 +74,11 @@ app.get('/', (req, res) => {
       health: 'GET /',
       validate: 'GET /api/validate/:username',
       access: 'GET|POST|DELETE /api/access/:username',
-      bulk: 'POST /api/access/bulk (OPTIMIZED)',
-      bulkRemove: 'POST /api/access/bulk-remove',
-      replace: 'POST /api/access/replace (NEW: Plan Changes)'
+      bulk: 'POST /api/access/bulk (OPTIMIZED + PROTECTED)',
+      bulkRemove: 'POST /api/access/bulk-remove (PROTECTED)',
+      replace: 'POST /api/access/replace (PROTECTED)',
+      metrics: 'GET /api/metrics/stats (E-COMMERCE)',
+      healthCheck: 'GET /api/metrics/health (E-COMMERCE)'
     }
   });
 });
@@ -83,6 +86,7 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api/validate', validateRoutes);
 app.use('/api/access', accessRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 // 404 handler
 app.use((req, res) => {
