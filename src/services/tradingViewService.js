@@ -393,14 +393,14 @@ class TradingViewService {
         }
       }
 
-      const duration = Date.now() - startTime;
-      bulkLogger.logBulkComplete('grant-access', processed, duration, successCount, errorCount);
+      const totalDuration = Date.now() - startTime;
+      bulkLogger.logBulkComplete('grant-access', processed, totalDuration, successCount, errorCount);
 
       return {
         total: processed,
         success: successCount,
         errors: errorCount,
-        duration,
+        duration: totalDuration,
         successRate: Math.round((successCount / processed) * 100)
       };
 
