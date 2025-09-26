@@ -28,39 +28,39 @@ const bulkLogger = logger.child({ component: 'bulk-operations' });
 const authLogger = logger.child({ component: 'authentication' });
 const apiLogger = logger.child({ component: 'api' });
 
+// Add utility methods to bulkLogger
+bulkLogger.logBulkStart = (operation, totalItems) => {
+  bulkLogger.info({ operation, totalItems }, `Starting bulk ${operation}`);
+};
+
+bulkLogger.logBulkProgress = (operation, processed, total, batchSize) => {
+  bulkLogger.info({
+    operation,
+    processed,
+    total,
+    batchSize,
+    progress: `${processed}/${total} (${Math.round(processed/total*100)}%)`
+  }, `Bulk ${operation} progress`);
+};
+
+bulkLogger.logBulkComplete = (operation, totalItems, duration, successCount, errorCount) => {
+  bulkLogger.info({
+    operation,
+    totalItems,
+    duration,
+    successCount,
+    errorCount,
+    successRate: `${Math.round(successCount/totalItems*100)}%`
+  }, `Bulk ${operation} completed`);
+};
+
+bulkLogger.logBulkError = (operation, error, context = {}) => {
+  bulkLogger.error({ operation, error: error.message, ...context }, `Bulk ${operation} error`);
+};
+
 module.exports = {
   logger,
   bulkLogger,
   authLogger,
-  apiLogger,
-
-  // Utility functions for bulk operations
-  logBulkStart: (operation, totalItems) => {
-    bulkLogger.info({ operation, totalItems }, `Starting bulk ${operation}`);
-  },
-
-  logBulkProgress: (operation, processed, total, batchSize) => {
-    bulkLogger.info({
-      operation,
-      processed,
-      total,
-      batchSize,
-      progress: `${processed}/${total} (${Math.round(processed/total*100)}%)`
-    }, `Bulk ${operation} progress`);
-  },
-
-  logBulkComplete: (operation, totalItems, duration, successCount, errorCount) => {
-    bulkLogger.info({
-      operation,
-      totalItems,
-      duration,
-      successCount,
-      errorCount,
-      successRate: `${Math.round(successCount/totalItems*100)}%`
-    }, `Bulk ${operation} completed`);
-  },
-
-  logBulkError: (operation, error, context = {}) => {
-    bulkLogger.error({ operation, error: error.message, ...context }, `Bulk ${operation} error`);
-  }
+  apiLogger
 };

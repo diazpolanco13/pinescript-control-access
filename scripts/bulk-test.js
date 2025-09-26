@@ -8,7 +8,7 @@
 
 require('dotenv').config();
 const tradingViewService = require('../src/services/tradingViewService');
-const { bulkLogger } = require('../src/utils/logger');
+const { logger, bulkLogger } = require('../src/utils/logger');
 
 async function runBulkTest() {
   console.log('🚀 Iniciando prueba de operaciones masivas...\n');
