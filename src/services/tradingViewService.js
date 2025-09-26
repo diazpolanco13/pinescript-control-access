@@ -14,6 +14,7 @@ const config = require('../../config');
 const sessionStorage = require('../utils/sessionStorage');
 const { getAccessExtension, parseDuration, getCurrentUTCDate } = require('../utils/dateHelper');
 const { authLogger, apiLogger, bulkLogger } = require('../utils/logger');
+const RequestBatcher = require('../utils/requestBatcher');
 
 /**
  * 🚀 HTTP/1.1 Connection Pooling Configuration (Optimized)
@@ -75,6 +76,17 @@ class TradingViewService {
   constructor() {
     this.sessionId = null;
     this.initialized = false;
+
+    // Initialize intelligent request batcher (TradingView-optimized)
+    this.requestBatcher = new RequestBatcher({
+      maxConcurrent: 2,    // REDUCIDO: 2 requests in parallel (más conservador)
+      batchSize: 3,        // REDUCIDO: 3 requests per batch
+      minDelay: 1500,      // AUMENTADO: 1.5s between batches (TradingView-friendly)
+      maxDelay: 30000,     // AUMENTADO: Max 30s delay for backoff
+      backoffMultiplier: 2.0, // Más agresivo backoff
+      circuitBreakerThreshold: 2, // MÁS SENSIBLE: Open circuit after 2 failures
+      circuitBreakerTimeout: 60000 // MÁS TIEMPO: 60s circuit open
+    });
   }
 
   /**
@@ -393,77 +405,267 @@ class TradingViewService {
    * Bulk grant access to multiple users and pine IDs
    * This is the high-performance implementation for mass operations
    */
+  /**
+   * Pre-validate users before bulk operations
+   */
+  async validateUsersBatch(users, options = {}) {
+    const { maxConcurrent = 3 } = options;
+    const results = new Map();
+
+    bulkLogger.info(`🔍 Pre-validating ${users.length} users before bulk operations`);
+
+    // Process in smaller concurrent batches
+    for (let i = 0; i < users.length; i += maxConcurrent) {
+      const batch = users.slice(i, i + maxConcurrent);
+      const batchPromises = batch.map(async (user) => {
+        try {
+          const isValid = await this.validateUsername(user);
+          results.set(user, isValid);
+          return { user, valid: isValid };
+        } catch (error) {
+          bulkLogger.warn(`Failed to validate user ${user}`, { error: error.message });
+          results.set(user, false);
+          return { user, valid: false };
+        }
+      });
+
+      await Promise.allSettled(batchPromises);
+
+      // Small delay between batches to be gentle with TradingView
+      if (i + maxConcurrent < users.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    const validUsers = Array.from(results.entries())
+      .filter(([_, valid]) => valid)
+      .map(([user, _]) => user);
+
+    const invalidUsers = Array.from(results.entries())
+      .filter(([_, valid]) => !valid)
+      .map(([user, _]) => user);
+
+    bulkLogger.info(`✅ User validation complete`, {
+      total: users.length,
+      valid: validUsers.length,
+      invalid: invalidUsers.length,
+      validPercent: Math.round((validUsers.length / users.length) * 100)
+    });
+
+    return {
+      validUsers,
+      invalidUsers,
+      results
+    };
+  }
+
   async bulkGrantAccess(users, pineIds, duration, options = {}) {
     const {
-      batchSize = config.bulk.batchSize,
-      delayMs = config.bulk.delayMs,
-      onProgress = null
+      onProgress = null,
+      preValidateUsers = true
     } = options;
 
     await this.init();
 
-    const startTime = Date.now();
-    let processed = 0;
-    let successCount = 0;
-    let errorCount = 0;
+    // Pre-validate users if requested
+    let usersToProcess = users;
+    let validationResults = null;
 
-    bulkLogger.logBulkStart('grant-access', users.length * pineIds.length);
+    if (preValidateUsers && users.length > 1) {
+      bulkLogger.info('🔍 Pre-validating users before bulk grant access');
+      validationResults = await this.validateUsersBatch(users, { maxConcurrent: 2 });
+
+      usersToProcess = validationResults.validUsers;
+
+      if (validationResults.invalidUsers.length > 0) {
+        bulkLogger.warn(`${validationResults.invalidUsers.length} invalid users skipped`, {
+          invalidUsers: validationResults.invalidUsers.slice(0, 5), // Show first 5
+          totalSkipped: validationResults.invalidUsers.length
+        });
+      }
+    }
+
+    const startTime = Date.now();
+    const totalOperations = usersToProcess.length * pineIds.length;
+
+    bulkLogger.logBulkStart('grant-access-intelligent', totalOperations);
+
+    if (usersToProcess.length === 0) {
+      bulkLogger.warn('No valid users to process after validation');
+      return {
+        total: 0,
+        success: 0,
+        errors: 0,
+        duration: 0,
+        successRate: 0,
+        skippedUsers: validationResults?.invalidUsers || [],
+        batcherStats: this.requestBatcher.getStats()
+      };
+    }
 
     try {
-      // Process in batches
-      const batches = this.chunkArray(users, batchSize);
+      let processed = 0;
+      let successCount = 0;
+      let errorCount = 0;
 
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        bulkLogger.info({
-          batch: i + 1,
-          totalBatches: batches.length,
-          batchSize: batch.length
-        }, `Processing batch ${i + 1}/${batches.length}`);
-
-        // Process all users in this batch simultaneously
-        const batchPromises = batch.flatMap(user =>
-          pineIds.map(pineId => this.grantAccess(user, pineId, duration))
-        );
-
-        const results = await Promise.allSettled(batchPromises);
-
-        // Count results
-        results.forEach(result => {
-          if (result.status === 'fulfilled') {
-            successCount++;
-          } else {
-            errorCount++;
-          }
-          processed++;
-        });
-
-        // Progress callback
-        if (onProgress) {
-          onProgress(processed, users.length * pineIds.length, successCount, errorCount);
-        } else {
-          bulkLogger.logBulkProgress('grant-access', processed, users.length * pineIds.length, batchSize);
-        }
-
-        // Delay between batches to avoid rate limits
-        if (i < batches.length - 1 && delayMs > 0) {
-          await this.delay(delayMs);
+      // Create individual requests for each user+pineId combination (only valid users)
+      const requests = [];
+      for (const user of usersToProcess) {
+        for (const pineId of pineIds) {
+          requests.push({
+            user,
+            pineId,
+            duration
+          });
         }
       }
 
+      bulkLogger.info(`🚀 Processing ${totalOperations} operations with intelligent batching`, {
+        users: users.length,
+        pineIds: pineIds.length,
+        batcherConfig: {
+          maxConcurrent: this.requestBatcher.maxConcurrent,
+          batchSize: this.requestBatcher.batchSize,
+          minDelay: this.requestBatcher.minDelay
+        }
+      });
+
+      // Progress tracking for callback
+      let lastProgressUpdate = 0;
+      const progressInterval = 2000; // Update progress every 2 seconds
+
+      // Process all requests through intelligent batcher
+      const batchPromises = requests.map(async (requestData, index) => {
+        let finalResult = null;
+        let retryCount = 0;
+        const maxOperationRetries = 3; // Máximo reintentos por operación completa
+
+        while (retryCount < maxOperationRetries && !finalResult) {
+          try {
+            const result = await this.requestBatcher.add(
+              async () => {
+                // Execute the actual grant access operation
+                return await this.grantAccess(
+                  requestData.user,
+                  requestData.pineId,
+                  requestData.duration
+                );
+              },
+              {
+                priority: retryCount > 0 ? 1 : 0, // Prioridad más alta para reintentos
+                maxRetries: retryCount > 0 ? 1 : 2 // Menos reintentos internos para reintentos externos
+              }
+            );
+
+            if (result && result.status === 'Success') {
+              finalResult = result;
+            } else {
+              retryCount++;
+              if (retryCount < maxOperationRetries) {
+                bulkLogger.warn(`Operation failed for ${requestData.user}, retrying (${retryCount}/${maxOperationRetries})`, {
+                  user: requestData.user,
+                  pineId: requestData.pineId,
+                  attempt: retryCount + 1,
+                  result: result
+                });
+
+                // Esperar antes del reintento (backoff exponencial)
+                const retryDelay = Math.min(5000 * Math.pow(2, retryCount - 1), 30000);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+              }
+            }
+          } catch (error) {
+            retryCount++;
+            if (retryCount < maxOperationRetries) {
+              bulkLogger.error(`Critical error for ${requestData.user}, retrying (${retryCount}/${maxOperationRetries})`, {
+                user: requestData.user,
+                pineId: requestData.pineId,
+                error: error.message,
+                attempt: retryCount + 1
+              });
+
+              // Esperar más tiempo para errores críticos
+              const retryDelay = Math.min(10000 * Math.pow(2, retryCount - 1), 60000);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+          }
+        }
+
+        // Update progress counters
+        processed++;
+        if (finalResult && finalResult.status === 'Success') {
+          successCount++;
+        } else {
+          errorCount++;
+          bulkLogger.error(`Operation failed permanently for ${requestData.user}`, {
+            user: requestData.user,
+            pineId: requestData.pineId,
+            totalRetries: retryCount,
+            finalResult: finalResult
+          });
+        }
+
+        // Progress callback (throttled)
+        const now = Date.now();
+        if (onProgress && (now - lastProgressUpdate > progressInterval || processed === totalOperations)) {
+          onProgress(processed, totalOperations, successCount, errorCount);
+          lastProgressUpdate = now;
+        }
+
+        // Log progress periodically
+        if (processed % 5 === 0 || processed === totalOperations) {
+          const progressPercent = Math.round((processed / totalOperations) * 100);
+          bulkLogger.info(`📈 Intelligent batching progress: ${processed}/${totalOperations} (${progressPercent}%)`, {
+            successful: successCount,
+            errors: errorCount,
+            successRate: Math.round((successCount / processed) * 100),
+            batcherStats: this.requestBatcher.getStats()
+          });
+        }
+
+        return finalResult;
+      });
+
+      // Wait for all operations to complete
+      await Promise.allSettled(batchPromises);
+
       const totalDuration = Date.now() - startTime;
-      bulkLogger.logBulkComplete('grant-access', processed, totalDuration, successCount, errorCount);
+
+      // Get final batcher stats
+      const batcherStats = this.requestBatcher.getStats();
+
+      bulkLogger.logBulkComplete('grant-access-intelligent', processed, totalDuration, successCount, errorCount);
+
+      bulkLogger.info('🎯 Intelligent batching completed', {
+        totalDuration,
+        operationsPerSecond: Math.round((totalOperations / totalDuration) * 1000 * 100) / 100,
+        batcherStats: {
+          totalBatches: batcherStats.currentBatch,
+          avgResponseTime: Math.round(batcherStats.avgResponseTime),
+          finalDelay: batcherStats.currentDelay,
+          circuitBreakerTriggered: batcherStats.consecutiveFailures >= this.requestBatcher.circuitBreakerThreshold
+        }
+      });
 
       return {
         total: processed,
         success: successCount,
         errors: errorCount,
         duration: totalDuration,
-        successRate: Math.round((successCount / processed) * 100)
+        successRate: Math.round((successCount / processed) * 100),
+        skippedUsers: validationResults?.invalidUsers || [],
+        totalUsersAttempted: users.length,
+        validUsersProcessed: usersToProcess.length,
+        batcherStats: {
+          batchesProcessed: batcherStats.currentBatch,
+          avgResponseTime: Math.round(batcherStats.avgResponseTime),
+          finalDelay: batcherStats.currentDelay,
+          circuitBreakerActivated: batcherStats.circuitBreakerThreshold <= batcherStats.consecutiveFailures
+        }
       };
 
     } catch (error) {
-      bulkLogger.logBulkError('grant-access', error);
+      bulkLogger.logBulkError('grant-access-intelligent', error);
       throw error;
     }
   }
