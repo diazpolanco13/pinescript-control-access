@@ -1,74 +1,301 @@
 [![Trendoscope](https://svgshare.com/i/u3u.svg)](https://trendoscope.io)
 # Tradingview-Access-Management
-[![CodeFactor](https://www.codefactor.io/repository/github/trendoscope-algorithms/tradingview-access-management/badge)](https://www.codefactor.io/repository/github/trendoscope-algorithms/tradingview-access-management)
-<br>
-This project provides restful API access to manage tradingview script access management. This is intended to be used by vendors along with appropriate security and other workflow management tools for automation of access management.
 
-<h1>Installation</h1>
-Follow below steps to install and run the API service
-<h3>Clone repo in replit</h3>
-Goto Replit Page:
+## 📋 Documentación Técnica - Análisis de Arquitectura
+
+### 🏗️ Arquitectura del Sistema
+
+Este proyecto implementa una API RESTful para gestión automatizada de acceso a scripts de TradingView. La arquitectura se basa en los siguientes componentes:
+
+#### **Estructura de Archivos:**
+```
+Tradingview-Access-Management/
+├── main.py              # Punto de entrada - inicia el servidor
+├── server.py            # Servidor Flask con rutas API
+├── tradingview.py       # Lógica core de autenticación y gestión de acceso
+├── config.py           # URLs y configuración de endpoints
+├── helper.py           # Utilidades para manejo de fechas
+├── pyproject.toml      # Dependencias del proyecto
+└── README.md           # Documentación
+```
+
+#### **Stack Tecnológico:**
+- **Framework Web**: Flask (servidor HTTP)
+- **Base de Datos**: Replit DB (clave-valor para persistencia)
+- **HTTP Client**: Requests + urllib3
+- **Gestión de Dependencias**: Poetry
+- **Python**: 3.8+
+
+### 🔐 Sistema de Autenticación y Persistencia
+
+#### **Flujo de Autenticación:**
+
+```python
+# Diagrama del flujo de autenticación
+1. Inicialización → 2. Verificación de sesión → 3. Login automático → 4. Persistencia
+```
+
+**Paso 1: Inicialización del Sistema**
+```python
+def __init__(self):
+    # Intenta recuperar sessionid de la base de datos
+    self.sessionid = db["sessionid"] if 'sessionid' in db.keys() else 'abcd'
+```
+
+**Paso 2: Validación de Sesión Activa**
+```python
+headers = {'cookie': 'sessionid=' + self.sessionid}
+test = requests.request("GET", config.urls["tvcoins"], headers=headers)
+if test.status_code != 200:
+    # Sesión inválida - proceder con login
+```
+
+**Paso 3: Proceso de Login Automático**
+```python
+# Credenciales desde variables de entorno
+username = os.environ['tvusername']
+password = os.environ['tvpassword']
+
+payload = {'username': username, 'password': password, 'remember': 'on'}
+login_headers = {
+    'origin': 'https://www.tradingview.com',
+    'User-Agent': userAgent,  # Dinámico según plataforma
+    'Content-Type': contentType,
+    'referer': 'https://www.tradingview.com'
+}
+login = requests.post(config.urls["signin"], data=body, headers=login_headers)
+
+# Extraer sessionid de las cookies de respuesta
+cookies = login.cookies.get_dict()
+self.sessionid = cookies["sessionid"]
+```
+
+**Paso 4: Persistencia de Sesión**
+```python
+# Guardar sessionid en Replit DB para futuras inicializaciones
+db["sessionid"] = self.sessionid
+```
+
+#### **Mecanismo de Persistencia:**
+
+**Base de Datos**: Utiliza Replit DB (base de datos clave-valor integrada)
+- **Clave**: `"sessionid"`
+- **Valor**: Cookie de sesión de TradingView
+- **Persistencia**: Automática entre reinicios del servidor
+
+**Ventajas del Sistema**:
+- ✅ **Login automático** al iniciar la aplicación
+- ✅ **Sesión persistente** entre reinicios
+- ✅ **Validación automática** de sesión activa
+- ✅ **Recuperación automática** si la sesión expira
+- ✅ **Sin intervención manual** requerida
+
+### 🔄 Ciclo de Vida de la Sesión
+
+```
+Inicio de Servidor → Verificar DB → ¿Sesión válida?
+       ↓                    ↓              ↓
+     Sí ↓                  No ↓           Sí → Continuar
+       ↓                    ↓              ↓
+   Usar sesión          Login automático   ↓
+   existente               ↓               ↓
+       ↓                    ↓              ↓
+   Operaciones API → Actualizar DB → Fin de sesión
+```
+
+### 📡 Endpoints de la API
+
+#### **1. Validación de Usuario**
+- **Endpoint**: `GET /validate/{username}`
+- **Función**: Verifica si un nombre de usuario existe en TradingView
+- **Implementación**: Consulta `username_hint` API de TradingView
+
+#### **2. Consulta de Acceso**
+- **Endpoint**: `GET /access/{username}`
+- **Función**: Obtiene estado actual de acceso a scripts específicos
+- **Implementación**: Consulta `pine_perm/list_users` con credenciales válidas
+
+#### **3. Gestión de Acceso (POST)**
+- **Endpoint**: `POST /access/{username}`
+- **Función**: Añade/actualiza acceso con duración específica
+- **Duraciones**: `7D` (7 días), `2M` (2 meses), `1L` (de por vida)
+
+#### **4. Remoción de Acceso**
+- **Endpoint**: `DELETE /access/{username}`
+- **Función**: Revoca acceso a scripts específicos
+
+### 🔧 Funciones Core
+
+#### **Helper Functions:**
+```python
+def get_access_extension(currentExpirationDate, extension_type, extension_length):
+    # Calcula nuevas fechas de expiración
+    # extension_type: 'Y'=años, 'M'=meses, 'W'=semanas, 'D'=días
+```
+
+#### **Gestión de Fechas:**
+- Utiliza `python-dateutil` para parsing y manipulación de fechas
+- Maneja zonas horarias UTC
+- Soporta extensiones de acceso flexibles
+
+### 🚀 Despliegue y Configuración
+
+#### **Variables de Entorno Requeridas:**
+```
+tvusername = "tu_usuario_tradingview"
+tvpassword = "tu_contraseña_tradingview"
+```
+
+#### **Requisitos:**
+- ✅ Suscripción Premium de TradingView
+- ✅ Variables de entorno configuradas
+- ✅ Acceso a internet para autenticación
+
+### 📊 Estados de Respuesta
+
+#### **Códigos de Estado de Acceso:**
+- `Success`: Operación completada exitosamente
+- `Failure`: Error en la operación
+- `Not Applied`: Usuario ya tiene acceso de por vida
+
+#### **Campos de Respuesta:**
+```json
+{
+  "pine_id": "PUB;id_del_script",
+  "username": "usuario_destino",
+  "hasAccess": true/false,
+  "noExpiration": true/false,
+  "currentExpiration": "2022-09-17T06:28:25.933303+00:00",
+  "expiration": "fecha_actualizada",
+  "status": "Success|Failure|Not Applied"
+}
+```
+
+## 📖 Descripción del Proyecto
+
+Este proyecto proporciona acceso API RESTful para gestionar la administración de acceso a scripts de TradingView. Está diseñado para ser utilizado por vendedores junto con herramientas apropiadas de seguridad y otras herramientas de gestión de flujos de trabajo para la automatización de la gestión de acceso.
+
+## ⚠️ **Compatibilidad de Plataforma**
+
+**¿Está diseñado SOLO para Replit?** ✅ **SÍ, actualmente está optimizado específicamente para Replit**
+
+### **Dependencias Replit Específicas:**
+- **`replit = "^3.2.4"`** - Dependencia obligatoria en `pyproject.toml`
+- **`from replit import db`** - Sistema de persistencia nativo de Replit
+- **`replit.nix`** - Configuración específica del entorno Replit
+
+### **¿Por qué Replit?**
+1. **Persistencia de Sesión**: Replit DB mantiene la `sessionid` entre reinicios
+2. **Despliegue Simplificado**: No requiere configuración de servidor externa
+3. **Variables de Entorno**: Gestión integrada de credenciales
+4. **Disponibilidad 24/7**: Los repls pueden mantenerse ejecutándose
+
+### **¿Se puede usar fuera de Replit?**
+🔄 **POSIBLE con modificaciones:**
+
+**Cambios necesarios:**
+1. **Reemplazar Replit DB**: Usar SQLite, JSON file, o Redis
+2. **Eliminar dependencia `replit`**: Remover de `pyproject.toml`
+3. **Configurar servidor**: Flask puede correr en cualquier hosting
+4. **Variables de entorno**: Configurar manualmente
+
+**Ejemplo de adaptación:**
+```python
+# En lugar de: from replit import db
+import json
+import os
+
+class SessionStorage:
+    def __init__(self):
+        self.file_path = 'session_data.json'
+
+    def __getitem__(self, key):
+        with open(self.file_path, 'r') as f:
+            data = json.load(f)
+        return data.get(key)
+
+    def __setitem__(self, key, value):
+        data = {}
+        if os.path.exists(self.file_path):
+            with open(self.file_path, 'r') as f:
+                data = json.load(f)
+        data[key] = value
+        with open(self.file_path, 'w') as f:
+            json.dump(data, f)
+
+# Usar: db = SessionStorage() en lugar de from replit import db
+```
+
+# Instalación
+
+Siga los pasos a continuación para instalar y ejecutar el servicio API
+
+### Clonar repositorio en Replit
+
+Ir a la página de Replit:
 https://replit.com/@trendoscope/Tradingview-Access-Management
 
-<h3>Update Replit environment variables</h3>
-Only environment variables to be updated are:
-<ul>
-<li>username - Your tradingview username</li>
-<li>password - Your tradingview password</li>
-</ul>
-Please note that access management apis will only work if you have Premium Tradingview subscription.
+### Actualizar variables de entorno de Replit
 
-<h3>Run the repl</h3>
-Just run the repl and your services are up and running. You will get the hostname on top right part of the project dashboard. Hostname will be of the format, 
-<pre>https://Tradingview-Access-Management.[YOUR_REPL_ACCOUN].repl.co</pre>
+Las únicas variables de entorno que deben actualizarse son:
 
-<h1>Usage</h1>
-Once up and running, you will be able to use following calls to manage Tradingview access.
+- **username** - Tu nombre de usuario de TradingView
+- **password** - Tu contraseña de TradingView
 
-<h3>GET /validate/{username}</h3>
-Can be used to validate username. This can be handy operation to execute before trying to execute access management for the user. If user is not valid, we can stop the workflow then and there.
-<p>
-<ul>
-<li><b>Payload</b> - None</li>
-<li><b>Headers</b> - None</li>
-<li><b>Returns</b> - JSON output with following information:</li>
-<ol>
-<li><b>validUser</b> - Can be true or false. Tells whether username passed is valid or not.</li>
-<li><b>verifiedUserName</b> - returns the exact username as in Tradingview records (along with matching case). If validUser is false, this field will also have blank value.</li>
-</ol>
-</ul>
-<pre>
+Ten en cuenta que las APIs de gestión de acceso solo funcionarán si tienes una suscripción Premium de TradingView.
+
+### Ejecutar el repl
+
+Simplemente ejecuta el repl y tus servicios estarán funcionando. Obtendrás el nombre del host en la parte superior derecha del panel del proyecto. El nombre del host tendrá el formato:
+
+```
+https://Tradingview-Access-Management.[TU_CUENTA_REPL].repl.co
+```
+
+# Uso
+
+Una vez en funcionamiento, podrás utilizar las siguientes llamadas para gestionar el acceso a TradingView.
+
+### GET /validate/{username}
+
+Puede utilizarse para validar un nombre de usuario. Esta puede ser una operación útil para ejecutar antes de intentar realizar la gestión de acceso para el usuario. Si el usuario no es válido, podemos detener el flujo de trabajo en ese momento.
+
+- **Payload** - Ninguno
+- **Headers** - Ninguno
+- **Devuelve** - Salida JSON con la siguiente información:
+  1. **validUser** - Puede ser true o false. Indica si el nombre de usuario proporcionado es válido o no.
+  2. **verifiedUserName** - devuelve el nombre de usuario exacto tal como aparece en los registros de TradingView (incluyendo mayúsculas y minúsculas). Si validUser es false, este campo también tendrá un valor vacío.
+
+```json
 {
     "validuser": true,
     "verifiedUserName": "Trendoscope"
 }
-</pre>
+```
 
 
-<h3>GET /access/{username}</h3>
-This method can be used to get the current access level of user for particular publications identified by pine_ids
-<p>
-<ul>
-<li><b>Payload</b> - Json Payload containing list of pine ids</li>
-<ol>
-<li><b>pine_ids</b> - Array of pine ids. Pine ids are backend unique ids for each script. We can get these ids from browser developer console when script is loaded or when access methods are performed on the tradingview UI. Please note, only Pine Ids for scripts which belong to your account will work in this way. You will not be able to control the access to scripts which are not yours.</li>
-<pre>
+### GET /access/{username}
+
+Este método puede utilizarse para obtener el nivel de acceso actual del usuario para publicaciones específicas identificadas por pine_ids
+
+- **Payload** - Payload JSON que contiene lista de pine ids
+  1. **pine_ids** - Array de pine ids. Los pine ids son IDs únicos del backend para cada script. Podemos obtener estos IDs desde la consola de desarrollador del navegador cuando se carga el script o cuando se realizan métodos de acceso en la interfaz de usuario de TradingView. Ten en cuenta que solo funcionarán los Pine IDs para scripts que pertenezcan a tu cuenta. No podrás controlar el acceso a scripts que no sean tuyos.
+
+```json
 {
     "pine_ids" : ["PUB;3be120ba74944ca7b32ad644f40aaff2", "PUB;2cb3ba84ce4443049f21659a3b492779"]
 }
-</pre>
-</ol>
-<li><b>Headers</b> - None</li>
-<li><b>Returns</b> - JSON output array with following information:</li>
-<ol>
-<li><b>pine_id</b> - Pine publication id which is sent as input to the API request</li>
-<li><b>username</b> - Username against which the operation is performed.</li>
-<li><b>hasAccess</b> - true if user already has access to script. false otherwise</li>
-<li><b>noExpiration</b> - true if user has non expiring access to script. false otherwise</li>
-<li><b>currentExpiration</b> - applicable only if hasAccess is true and noExpiration is false. Ignore otherwise.</li>
-</ol>
-</ul>
-<pre>
+```
+
+- **Headers** - Ninguno
+- **Devuelve** - Array de salida JSON con la siguiente información:
+  1. **pine_id** - ID de publicación Pine que se envía como entrada a la solicitud de API
+  2. **username** - Nombre de usuario contra el cual se realiza la operación.
+  3. **hasAccess** - true si el usuario ya tiene acceso al script. false en caso contrario
+  4. **noExpiration** - true si el usuario tiene acceso sin expiración al script. false en caso contrario
+  5. **currentExpiration** - aplicable solo si hasAccess es true y noExpiration es false. Ignorar en caso contrario.
+
+```json
 [
     {
         "pine_id": "PUB;3be120ba74944ca7b32ad644f40aaff2",
@@ -85,32 +312,30 @@ This method can be used to get the current access level of user for particular p
         "currentExpiration": "2022-08-17 06:27:49.196514+00:00"
     }
 ]
-</pre>
+```
 
-<h3>DELETE /access/{username}</h3>
-This method can be used to remove the current access level of user for particular publications identified by pine_ids
-<p>
-<ul>
-<li><b>Payload</b> - Json Payload containing list of pine ids</li>
-<ol>
-<li><b>pine_ids</b> - Array of pine ids. Pine ids are backend unique ids for each script. We can get these ids from browser developer console when script is loaded or when access methods are performed on the tradingview UI. Please note, only Pine Ids for scripts which belong to your account will work in this way. You will not be able to control the access to scripts which are not yours.</li>
-<pre>
+### DELETE /access/{username}
+
+Este método puede utilizarse para remover el nivel de acceso actual del usuario para publicaciones específicas identificadas por pine_ids
+
+- **Payload** - Payload JSON que contiene lista de pine ids
+  1. **pine_ids** - Array de pine ids. Los pine ids son IDs únicos del backend para cada script. Podemos obtener estos IDs desde la consola de desarrollador del navegador cuando se carga el script o cuando se realizan métodos de acceso en la interfaz de usuario de TradingView. Ten en cuenta que solo funcionarán los Pine IDs para scripts que pertenezcan a tu cuenta. No podrás controlar el acceso a scripts que no sean tuyos.
+
+```json
 {
     "pine_ids" : ["PUB;3be120ba74944ca7b32ad644f40aaff2", "PUB;2cb3ba84ce4443049f21659a3b492779"]
 }
-</pre>
-</ol>
-<li><b>Headers</b> - None</li>
-<li><b>Returns</b> - JSON output array with following information:</li>
-<ol>
-<li><b>pine_id</b> - Pine publication id which is sent as input to the API request</li>
-<li><b>username</b> - Username against which the operation is performed.</li>
-<li><b>hasAccess</b> - true if user had access to script before removing access. false otherwise</li>
-<li><b>noExpiration</b> - true if user had non expiring access to script before removing access. false otherwise</li>
-<li><b>status</b> - Status of the remove operation</li>
-</ol>
-</ul>
-<pre>
+```
+
+- **Headers** - Ninguno
+- **Devuelve** - Array de salida JSON con la siguiente información:
+  1. **pine_id** - ID de publicación Pine que se envía como entrada a la solicitud de API
+  2. **username** - Nombre de usuario contra el cual se realiza la operación.
+  3. **hasAccess** - true si el usuario tenía acceso al script antes de remover el acceso. false en caso contrario
+  4. **noExpiration** - true si el usuario tenía acceso sin expiración al script antes de remover el acceso. false en caso contrario
+  5. **status** - Estado de la operación de remoción
+
+```json
 [
     {
         "pine_id": "PUB;3be120ba74944ca7b32ad644f40aaff2",
@@ -129,36 +354,34 @@ This method can be used to remove the current access level of user for particula
         "status": "Success"
     }
 ]
-</pre>
+```
 
-<h3>POST /access/{username}</h3>
-This method can be used to add/update current access level of user for particular publications identified by pine_ids. 
-<p>
-<ul>
-<li><b>Payload</b> - Json Payload containing list of pine ids</li>
-<ol>
-<li><b>pine_ids</b> - Array of pine ids. Pine ids are backend unique ids for each script. We can get these ids from browser developer console when script is loaded or when access methods are performed on the tradingview UI. Please note, only Pine Ids for scripts which belong to your account will work in this way. You will not be able to control the access to scripts which are not yours.</li>
-<li><b>duration</b> - String representing duration. Example, "7D" = 7 days, "2M" = 2 months, "1L" = Lifetime etc</li>
-<pre>
+### POST /access/{username}
+
+Este método puede utilizarse para añadir/actualizar el nivel de acceso actual del usuario para publicaciones específicas identificadas por pine_ids.
+
+- **Payload** - Payload JSON que contiene lista de pine ids
+  1. **pine_ids** - Array de pine ids. Los pine ids son IDs únicos del backend para cada script. Podemos obtener estos IDs desde la consola de desarrollador del navegador cuando se carga el script o cuando se realizan métodos de acceso en la interfaz de usuario de TradingView. Ten en cuenta que solo funcionarán los Pine IDs para scripts que pertenezcan a tu cuenta. No podrás controlar el acceso a scripts que no sean tuyos.
+  2. **duration** - Cadena que representa la duración. Ejemplo: "7D" = 7 días, "2M" = 2 meses, "1L" = De por vida, etc.
+
+```json
 {
     "pine_ids" : ["PUB;3be120ba74944ca7b32ad644f40aaff2", "PUB;2cb3ba84ce4443049f21659a3b492779"],
     "duration" : "7D"
 }
-</pre>
-</ol>
-<li><b>Headers</b> - None</li>
-<li><b>Returns</b> - JSON output array with following information:</li>
-<ol>
-<li><b>pine_id</b> - Pine publication id which is sent as input to the API request</li>
-<li><b>username</b> - Username against which the operation is performed.</li>
-<li><b>hasAccess</b> - true if user already has access to script. false otherwise</li>
-<li><b>noExpiration</b> - true if user has non expiring access to script. false otherwise</li>
-<li><b>currentExpiration</b> - applicable only if hasAccess is true and noExpiration is false. Ignore otherwise.</li>
-<li><b>expiration</b> - New expiration applied after applying access update.</li>
-<li><b>status</b> - Status can be Success, Failure, or Not Applied. Not Applied will be returned if user already has lifetime access to given script and no further addition is possible.</li>
-</ol>
-</ul>
-<pre>
+```
+
+- **Headers** - Ninguno
+- **Devuelve** - Array de salida JSON con la siguiente información:
+  1. **pine_id** - ID de publicación Pine que se envía como entrada a la solicitud de API
+  2. **username** - Nombre de usuario contra el cual se realiza la operación.
+  3. **hasAccess** - true si el usuario ya tiene acceso al script. false en caso contrario
+  4. **noExpiration** - true si el usuario tiene acceso sin expiración al script. false en caso contrario
+  5. **currentExpiration** - aplicable solo si hasAccess es true y noExpiration es false. Ignorar en caso contrario.
+  6. **expiration** - Nueva expiración aplicada después de aplicar la actualización de acceso.
+  7. **status** - El estado puede ser Success, Failure, o Not Applied. Not Applied se devolverá si el usuario ya tiene acceso de por vida al script dado y no es posible añadir más.
+
+```json
 [
     {
         "pine_id": "PUB;3be120ba74944ca7b32ad644f40aaff2",
@@ -179,19 +402,5 @@ This method can be used to add/update current access level of user for particula
         "status": "Success"
     }
 ]
-</pre>
+```
 
-## Contributions & Thanks
-If you found this project interesting or useful, create accounts with my referral links:
-- [Tradingview](https://www.tradingview.com/?aff_id=112733)
-- [BingX](https://bingx.com/en-us/partner/Trendoscope/)
-
-# Profiles
-<a href="https://p.trendoscope.io/"><img src="https://avatars.githubusercontent.com/u/107564590" width="100" height="100"></a>
-<a href="https://p.trendoscope.io/twitter"><img src="https://i.pinimg.com/originals/aa/3d/75/aa3d750ddec109594ac7c89cb8cbabab.jpg" width="100" height="100"></a>
-<a href="https://p.trendoscope.io/telegram"><img src="https://i.pinimg.com/originals/70/c3/ea/70c3ea9e43ebd11ec98de96937529408.jpg" width="100" height="100"></a>
-<a href="https://p.trendoscope.io/discord"><img src="https://i.pinimg.com/originals/b6/fe/4a/b6fe4a830e0263d8344b63e3dbcf3033.jpg" width="100" height="100"></a>
-<a href="https://p.trendoscope.io/youtube"><img src="https://i.pinimg.com/originals/f4/14/b8/f414b816ef11df2c1eaae61f2fc8c489.jpg" width="100" height="100"></a>
-
-# Links
-https://linktr.ee/tscope
