@@ -16,6 +16,7 @@ const { apiLimiter } = require('./middleware/rateLimit');
 const validateRoutes = require('./routes/validate');
 const accessRoutes = require('./routes/access');
 const metricsRoutes = require('./routes/metrics');
+const configRoutes = require('./routes/config');
 
 // Initialize Express app
 const app = express();
@@ -87,6 +88,7 @@ app.get('/', (req, res) => {
 app.use('/api/validate', validateRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/config', configRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -134,14 +136,15 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, '0.0.0.0', () => {
   logger.info({
     port: config.port,
     nodeEnv: config.nodeEnv,
     pid: process.pid
   }, '🚀 TradingView Access Management Server started');
 
-  console.log(`🚀 Server running on port ${config.port}`);
+  console.log(`🚀 Server running on http://0.0.0.0:${config.port}`);
+  console.log(`🌐 Access via: http://localhost:${config.port} or http://127.0.0.1:${config.port}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
   console.log(`🔧 PID: ${process.pid}`);
   console.log(`📝 Logs: ${config.logLevel} level`);

@@ -20,6 +20,10 @@
 - 🔒 **Seguridad**: Autenticación automática con TradingView
 - 🎯 **API RESTful**: Endpoints intuitivos y bien documentados
 - 🏗️ **Alta Disponibilidad**: Reinicio automático de workers caídos
+- 🎨 **Dashboard Web**: Interfaz React + Tailwind para administración
+- ⚙️ **Configuración Visual**: Setup TradingView via interfaz web
+- 📊 **Monitoreo Tiempo Real**: Estado de conexión y métricas live
+- 🧪 **Validación Interactiva**: Pruebas de usuarios desde el dashboard
 
 ## 📊 Rendimiento Probado (Usuarios Reales)
 
@@ -64,20 +68,37 @@
 ## 🏗️ Arquitectura
 
 ```
-TradingView Access Management (Node.js)
-├── src/
+TradingView Access Management (Node.js + React)
+├── src/                       # Backend API
 │   ├── server.js              # Servidor Express principal
 │   ├── routes/                # Endpoints REST
 │   │   ├── validate.js        # Validación de usuarios
-│   │   └── access.js          # Gestión de accesos
+│   │   ├── access.js          # Gestión de accesos
+│   │   ├── config.js          # Configuración TradingView (NUEVO)
+│   │   └── metrics.js         # Métricas para e-commerce
 │   ├── services/
-│   │   └── tradingViewService.js # Lógica core TradingView
+│   │   ├── tradingViewService.js # Lógica core TradingView
+│   │   ├── webhookService.js  # Sistema de webhooks
+│   │   ├── alertService.js    # Alertas por email
+│   │   └── backupService.js   # Backup automático
 │   ├── utils/                 # Utilidades
 │   │   ├── logger.js          # Sistema de logging
 │   │   ├── dateHelper.js      # Manejo de fechas
 │   │   └── sessionStorage.js  # Persistencia de sesiones
 │   └── middleware/
-│       └── rateLimit.js       # Control de rate limiting
+│       ├── rateLimit.js       # Control de rate limiting
+│       └── apiAuth.js         # Autenticación API key
+├── dashboard/                 # Frontend React (NUEVO)
+│   ├── src/
+│   │   ├── App.jsx            # Componente principal
+│   │   ├── components/
+│   │   │   └── TradingViewConnection.jsx # Configuración TradingView
+│   │   ├── services/
+│   │   │   └── api.js         # Cliente API
+│   │   └── hooks/
+│   │       └── useApi.js      # Custom hooks para API
+│   ├── tailwind.config.js     # Configuración Tailwind v4
+│   └── vite.config.js         # Configuración Vite
 ├── config/                    # Configuración
 ├── scripts/                   # Scripts de testing
 └── tests/                     # Tests automatizados
@@ -113,13 +134,19 @@ NODE_ENV=development
 ### 3. Ejecutar
 
 ```bash
-# Desarrollo (single-threaded)
+# 🎨 FULL STACK - Dashboard + API (RECOMENDADO)
+npm run dev:full
+
+# Desarrollo backend solo
 npm run dev
 
-# Producción (single-threaded)
-npm start
+# Desarrollo dashboard solo
+npm run dev:dashboard
 
-# 🆕 CLUSTERING MULTI-CORE (RECOMENDADO)
+# Build dashboard para producción
+npm run build:dashboard
+
+# 🆕 CLUSTERING MULTI-CORE (PRODUCCIÓN)
 # Desarrollo con clustering
 npm run dev:cluster
 
@@ -143,8 +170,9 @@ npm run test:bulk
 
 | Modo | Comando | Uso | Ventajas |
 |------|---------|-----|----------|
-| **Desarrollo** | `npm run dev` | Local testing | Hot reload |
-| **Producción Básica** | `npm start` | Servidores pequeños | Simple |
+| **🎨 Full Stack Dev** | `npm run dev:full` | Desarrollo completo | Dashboard + API |
+| **Desarrollo Backend** | `npm run dev` | Solo API | Hot reload |
+| **Desarrollo Frontend** | `npm run dev:dashboard` | Solo Dashboard | Interfaz web |
 | **🏆 Producción Clustering** | `npm run start:cluster` | Alto rendimiento | 2-6x más rápido |
 | **🏆 Producción PM2** | `npm run pm2:start` | Enterprise | Gestión completa |
 
@@ -501,6 +529,30 @@ curl -X POST "http://localhost:5000/api/access/replace" \
   }'
 ```
 
+### ⚙️ **Configuración TradingView (⭐ NUEVO - Dashboard Web)**
+```bash
+# Probar credenciales TradingView
+curl -X POST "http://localhost:5000/api/config/tradingview" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "tu_usuario_tradingview",
+    "password": "tu_password",
+    "testOnly": true
+  }'
+
+# Guardar credenciales TradingView  
+curl -X POST "http://localhost:5000/api/config/tradingview" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "tu_usuario_tradingview", 
+    "password": "tu_password",
+    "testOnly": false
+  }'
+
+# Ver estado de configuración
+curl -X GET "http://localhost:5000/api/config/tradingview/status"
+```
+
 **Casos de uso ideales para `/replace`:**
 - ✅ **Downgrade**: LIFETIME → Plan mensual
 - ✅ **Cambio de plan**: 6 meses → 1 mes
@@ -550,6 +602,63 @@ npm run smart-test
 
 # Test con todos los usuarios disponibles
 npm run test:bulk
+```
+
+## 🎨 Dashboard Web (Frontend React)
+
+### 🚀 Acceso al Dashboard
+```bash
+# Después de ejecutar npm run dev:full:
+# Frontend: http://localhost:5173
+# Backend:  http://localhost:5000
+```
+
+### ✨ Características del Dashboard
+
+#### 📊 **Estado de Conexión API**
+- Verificación automática cada 30 segundos
+- Indicadores visuales (✅/❌/⏳) 
+- Información de versión y endpoints disponibles
+- Botón manual "🔄 Verificar Conexión"
+
+#### 🔐 **Configuración TradingView**
+- Formulario seguro para credenciales
+- Toggle para mostrar/ocultar contraseña
+- Prueba de conexión en tiempo real
+- Guardado automático en .env
+- Validación real contra TradingView API
+
+#### 📈 **Métricas del Sistema**
+- Requests hoy, usuarios activos, uptime
+- Actualización automática cada 60 segundos
+- Loading states con animaciones
+
+#### 🧪 **Validación Interactiva** 
+- Campo de texto para probar usuarios
+- Validación real contra TradingView
+- Respuestas diferenciadas (válido/inválido)
+- Indicadores visuales de estado
+
+### 🎨 Stack Tecnológico Frontend
+- **React 18** + **Vite 7** (desarrollo súper rápido)
+- **Tailwind CSS v4** (plugin nativo de Vite)
+- **Axios** para comunicación con API
+- **Custom Hooks** para manejo de estado
+- **Responsive Design** mobile-first
+
+### 🛠️ Scripts de Desarrollo
+```bash
+# Full stack (frontend + backend)
+npm run dev:full
+
+# Solo frontend  
+npm run dev:dashboard
+
+# Solo backend
+npm run dev
+
+# Build para producción
+npm run build:dashboard
 ```
 
 ### 🔧 Testing con Postman/Insomnia
@@ -741,6 +850,16 @@ POST /api/access/bulk
 - **Solución**: Reiniciar servidor - login automático se ejecuta nuevamente
 
 ## 📝 Changelog
+
+### v2.2.0 - Dashboard Edition (2025-09-26)
+- ✅ **Dashboard Web Completo**: React 18 + Tailwind CSS v4
+- ✅ **Configuración Visual TradingView**: Setup vía interfaz web
+- ✅ **Monitoreo Tiempo Real**: Estado API, métricas, conexión
+- ✅ **Validación Interactiva**: Pruebas de usuarios desde dashboard
+- ✅ **Nuevos Endpoints**: `/api/config/tradingview` + `/status`
+- ✅ **Full Stack Development**: `npm run dev:full` 
+- ✅ **Arquitectura Moderna**: Frontend + Backend integrados
+- ✅ **UX Profesional**: Responsive, loading states, indicadores visuales
 
 ### v2.1.0 - Optimized Edition (2025-09-26)
 - ✅ **Optimización completa** del Request Batcher (4x más rápido)
