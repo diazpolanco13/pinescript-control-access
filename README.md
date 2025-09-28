@@ -199,7 +199,7 @@ GET /api/validate/:username
 ```json
 {
   "validuser": true,
-  "verifiedUserName": "Trendoscope"
+  "verifiedUserName": "apidevs"
 }
 ```
 
@@ -231,7 +231,7 @@ GET /api/access/:username
 **Respuesta de Éxito (200):**
 ```json
 {
-  "username": "trendoscope",
+  "username": "apidevs",
   "access_details": [
     {
       "pine_id": "PUB;ebd861d70a9f478bb06fe60c5d8f469c",
@@ -266,6 +266,7 @@ POST /api/access/:username
 - `"30D"` - 30 días
 - `"90D"` - 90 días
 - `"1Y"` - 1 año
+- `"1L"` - LifeTIme
 
 **Respuesta de Éxito (200):**
 ```json
@@ -273,7 +274,7 @@ POST /api/access/:username
   "status": "Success",
   "message": "Access granted successfully",
   "details": {
-    "username": "trendoscope",
+    "username": "apidevs",
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
     "expiration_date": "2025-10-03T08:45:30Z",
     "granted_at": "2025-09-26T08:45:30Z"
@@ -304,7 +305,7 @@ DELETE /api/access/:username
   "status": "Success",
   "message": "Access removed successfully",
   "details": {
-    "username": "trendoscope",
+    "username": "apidevs",
     "pine_ids_removed": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
     "removed_at": "2025-09-26T08:45:30Z"
   }
@@ -412,10 +413,10 @@ POST /api/access/bulk
 npm start
 
 # 2. Validar que funciona
-curl "http://localhost:5000/api/validate/trendoscope"
+curl "http://localhost:5000/api/validate/apidevs"
 
 # 3. Conceder acceso de prueba
-curl -X POST "http://localhost:5000/api/access/trendoscope" \
+curl -X POST "http://localhost:5000/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
 ```
@@ -425,16 +426,16 @@ curl -X POST "http://localhost:5000/api/access/trendoscope" \
 #### 👤 Validar Usuario
 ```bash
 # Verificar si usuario existe
-curl -s "http://localhost:5000/api/validate/trendoscope" | jq
+curl -s "http://localhost:5000/api/validate/apidevs" | jq
 ```
 
 #### 🔍 Consultar Acceso Actual
 ```bash
 # Ver todo el acceso del usuario
-curl -s "http://localhost:5000/api/access/trendoscope" | jq
+curl -s "http://localhost:5000/api/access/apidevs" | jq
 
 # Ver acceso a indicadores específicos
-curl -X GET "http://localhost:5000/api/access/trendoscope" \
+curl -X GET "http://localhost:5000/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]}' | jq
 ```
@@ -442,7 +443,7 @@ curl -X GET "http://localhost:5000/api/access/trendoscope" \
 #### ➕ Conceder Acceso
 ```bash
 # Acceso por 7 días
-curl -X POST "http://localhost:5000/api/access/trendoscope" \
+curl -X POST "http://localhost:5000/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
@@ -461,7 +462,7 @@ curl -X POST "http://localhost:5000/api/access/johndoe" \
 #### ➖ Remover Acceso
 ```bash
 # Remover acceso a indicadores específicos
-curl -X DELETE "http://localhost:5000/api/access/trendoscope" \
+curl -X DELETE "http://localhost:5000/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]

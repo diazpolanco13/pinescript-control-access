@@ -81,7 +81,7 @@ async function testEcommerceIntegration() {
     
     try {
       const bulkResponse = await axios.post(`${API_BASE}/api/access/bulk`, {
-        users: ['trendoscope'],
+        users: ['apidevs'],
         pine_ids: ['PUB;ebd861d70a9f478bb06fe60c5d8f469c'],
         duration: '7D',
         options: { preValidateUsers: false }

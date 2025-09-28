@@ -7,16 +7,19 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const path = require('path');
 
 const config = require('../config');
 const { logger } = require('./utils/logger');
 const { apiLimiter } = require('./middleware/rateLimit');
+const { initAdminAuth } = require('./utils/adminAuth');
 
 // Routes
 const validateRoutes = require('./routes/validate');
 const accessRoutes = require('./routes/access');
 const metricsRoutes = require('./routes/metrics');
 const configRoutes = require('./routes/config');
+const { router: adminRoutes, setTradingViewService } = require('./routes/admin');
 
 // Initialize Express app
 const app = express();
@@ -44,6 +47,9 @@ app.use('/api/', apiLimiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' })); // Large limit for bulk operations
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Static files
+app.use(express.static('public'));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -84,11 +90,32 @@ app.get('/', (req, res) => {
   });
 });
 
+// Initialize admin authentication (similar al sistema Python)
+const adminToken = initAdminAuth();
+
+// Initialize TradingView service globally
+const TradingViewService = require('./services/tradingViewService');
+const tradingViewService = new TradingViewService();
+
+// Connect TradingView service to admin routes
+setTradingViewService(tradingViewService);
+
+// Initialize TradingView service (carga cookies automáticamente)
+tradingViewService.init().catch(error => {
+  logger.error({ error: error.message }, 'Failed to initialize TradingView service');
+});
+
 // API routes
 app.use('/api/validate', validateRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/config', configRoutes);
+app.use('/admin', adminRoutes);
+
+// Admin panel route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
 
 // 404 handler
 app.use((req, res) => {

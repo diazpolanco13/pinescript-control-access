@@ -94,7 +94,7 @@ async function runHttp2Benchmark(serverCommand, serverName, useHttp2) {
       const requestStart = Date.now();
 
       try {
-        const response = await fetch('http://localhost:5000/api/validate/trendoscope');
+        const response = await fetch('http://localhost:5000/api/validate/apidevs');
         const requestEnd = Date.now();
 
         if (response.ok) {
@@ -175,7 +175,7 @@ async function main() {
   console.log('🔗 BENCHMARK COMPLETO: HTTP/2 Connection Pooling');
   console.log('⏰ Duración por test: 20 segundos');
   console.log('🔄 Requests concurrentes: 5');
-  console.log('📊 Endpoint: GET /api/validate/trendoscope');
+  console.log('📊 Endpoint: GET /api/validate/apidevs');
 
   try {
     // Test 1: Sin HTTP/2 (configuración base)

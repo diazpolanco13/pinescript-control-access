@@ -10,7 +10,7 @@ const axios = require('axios');
 
 const TEST_DURATION = 10000; // 10 segundos
 const CONCURRENT_REQUESTS = 10;
-const ENDPOINT = 'http://localhost:5000/api/validate/trendoscope';
+const ENDPOINT = 'http://localhost:5000/api/validate/apidevs';
 
 async function runQuickBenchmark() {
   console.log('🚀 QUICK BENCHMARK: Rendimiento Optimizado\n');

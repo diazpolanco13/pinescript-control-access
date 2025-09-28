@@ -85,9 +85,9 @@ describe('💼 TradingView Service', () => {
     });
 
     test('should validate existing username', async () => {
-      const username = 'trendoscope';
+      const username = 'apidevs';
       const mockResponse = {
-        data: [{ username: 'Trendoscope' }]
+        data: [{ username: 'apidevs' }]
       };
 
       axios.get.mockResolvedValue(mockResponse);
@@ -96,7 +96,7 @@ describe('💼 TradingView Service', () => {
 
       expect(result).toEqual({
         validuser: true,
-        verifiedUserName: 'Trendoscope'
+        verifiedUserName: 'apidevs'
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe('💼 TradingView Service', () => {
       const mockApiResponse = {
         data: {
           results: [{
-            username: 'trendoscope',
+            username: 'apidevs',
             expiration: '2025-10-03T08:00:25+00:00'
           }]
         }
@@ -140,11 +140,11 @@ describe('💼 TradingView Service', () => {
 
       axios.post.mockResolvedValue(mockApiResponse);
 
-      const result = await tradingViewService.getAccessDetails('trendoscope', 'PUB;test123');
+      const result = await tradingViewService.getAccessDetails('apidevs', 'PUB;test123');
 
       expect(result).toMatchObject({
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: true,
         noExpiration: false,
         currentExpiration: '2025-10-03T08:00:25+00:00'
@@ -156,7 +156,7 @@ describe('💼 TradingView Service', () => {
         data: { results: [] }
       });
 
-      const result = await tradingViewService.getAccessDetails('trendoscope', 'PUB;test123');
+      const result = await tradingViewService.getAccessDetails('apidevs', 'PUB;test123');
 
       expect(result.hasAccess).toBe(false);
       expect(result.noExpiration).toBe(false);
@@ -166,13 +166,13 @@ describe('💼 TradingView Service', () => {
       axios.post.mockResolvedValue({
         data: {
           results: [{
-            username: 'trendoscope',
+            username: 'apidevs',
             expiration: null
           }]
         }
       });
 
-      const result = await tradingViewService.getAccessDetails('trendoscope', 'PUB;test123');
+      const result = await tradingViewService.getAccessDetails('apidevs', 'PUB;test123');
 
       expect(result.hasAccess).toBe(true);
       expect(result.noExpiration).toBe(true);
@@ -187,7 +187,7 @@ describe('💼 TradingView Service', () => {
     test('should grant time-limited access successfully', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: false,
         noExpiration: false,
         currentExpiration: '2025-09-26T10:00:00+00:00'
@@ -210,7 +210,7 @@ describe('💼 TradingView Service', () => {
     test('should grant lifetime access', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: false,
         noExpiration: false,
         currentExpiration: '2025-09-26T10:00:00+00:00'
@@ -227,7 +227,7 @@ describe('💼 TradingView Service', () => {
     test('should skip granting if user already has lifetime access', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: true,
         noExpiration: true, // Already has lifetime access
         currentExpiration: '2025-09-26T10:00:00+00:00'
@@ -242,7 +242,7 @@ describe('💼 TradingView Service', () => {
     test('should handle API errors', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: false,
         noExpiration: false,
         currentExpiration: '2025-09-26T10:00:00+00:00'
@@ -267,7 +267,7 @@ describe('💼 TradingView Service', () => {
     test('should remove access successfully', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: true
       };
 
@@ -281,7 +281,7 @@ describe('💼 TradingView Service', () => {
     test('should handle removal API errors', async () => {
       const accessDetails = {
         pine_id: 'PUB;test123',
-        username: 'trendoscope',
+        username: 'apidevs',
         hasAccess: true
       };
 

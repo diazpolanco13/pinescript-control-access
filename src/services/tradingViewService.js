@@ -15,6 +15,7 @@ const sessionStorage = require('../utils/sessionStorage');
 const { getAccessExtension, parseDuration, getCurrentUTCDate } = require('../utils/dateHelper');
 const { authLogger, apiLogger, bulkLogger } = require('../utils/logger');
 const RequestBatcher = require('../utils/requestBatcher');
+const CookieManager = require('../utils/cookieManager');
 
 /**
  * 🚀 HTTP/1.1 Connection Pooling Configuration (Optimized)
@@ -75,11 +76,13 @@ setInterval(() => {
 class TradingViewService {
   constructor() {
     this.sessionId = null;
+    this.sessionIdSign = null;
     this.initialized = false;
+    this.cookieManager = new CookieManager();
 
     // Initialize intelligent request batcher (OPTIMIZED for performance)
     this.requestBatcher = new RequestBatcher({
-      maxConcurrent: 4,    // OPTIMIZADO: 4 requests in parallel 
+      maxConcurrent: 4,    // OPTIMIZADO: 4 requests in parallel
       batchSize: 8,        // OPTIMIZADO: 8 requests per batch
       minDelay: 300,       // OPTIMIZADO: 300ms between batches (balanceado)
       maxDelay: 15000,     // REDUCIDO: Max 15s delay for backoff
@@ -90,30 +93,38 @@ class TradingViewService {
   }
 
   /**
-   * Initialize service - check/load session
+   * Initialize service - load and validate cookies
+   * Basado en el sistema Python funcional que evita CAPTCHA
    */
   async init() {
     if (this.initialized) return;
 
     try {
-      authLogger.info('Initializing TradingView service...');
+      authLogger.info('🔍 Initializing TradingView service with cookie authentication...');
 
-      // Load session from storage
-      this.sessionId = await sessionStorage.getSessionId();
-      authLogger.debug({ hasSession: !!this.sessionId }, 'Session loaded from storage');
+      // Load cookies from storage (similar al sistema Python)
+      const cookieData = await this.cookieManager.loadCookies();
 
-      // Validate session
-      if (this.sessionId) {
-        const isValid = await this.validateSession();
+      if (cookieData) {
+        this.sessionId = cookieData.sessionid;
+        this.sessionIdSign = cookieData.sessionid_sign;
+
+        authLogger.debug({
+          hasSessionId: !!this.sessionId,
+          hasSessionIdSign: !!this.sessionIdSign,
+          lastUpdated: cookieData.timestamp
+        }, 'Cookies loaded from storage');
+
+        // Validate cookies against TradingView API
+        const isValid = await this.validateCookies();
         if (!isValid) {
-          authLogger.warn('Stored session is invalid, logging in again...');
-          await this.login();
+          authLogger.warn('❌ Stored cookies are invalid or expired');
+          // No hacer login automático - esperar actualización manual
         } else {
-          authLogger.info('Session is valid');
+          authLogger.info('✅ Cookies are valid - ready for API calls');
         }
       } else {
-        authLogger.info('No stored session, logging in...');
-        await this.login();
+        authLogger.info('⚠️ No cookies found - manual cookie update required via admin panel');
       }
 
       this.initialized = true;
@@ -125,67 +136,77 @@ class TradingViewService {
   }
 
   /**
-   * Validate current session
+   * Validate current cookies against TradingView API
+   * Similar al sistema Python - usa ambas cookies sessionid y sessionid_sign
    */
-  async validateSession() {
-    try {
-      const response = await axios.get(urls.tvcoins, {
-        headers: { cookie: `sessionid=${this.sessionId}` },
-        timeout: 10000
-      });
+  async validateCookies() {
+    if (!this.sessionId || !this.sessionIdSign) {
+      return false;
+    }
 
-      return response.status === 200;
+    try {
+      return await this.cookieManager.validateCookies(this.sessionId, this.sessionIdSign);
     } catch (error) {
-      authLogger.debug({ error: error.message }, 'Session validation failed');
+      authLogger.debug({ error: error.message }, 'Cookie validation failed');
       return false;
     }
   }
 
   /**
-   * Login to TradingView
+   * Update cookies manually (similar al sistema Python)
+   * @param {string} sessionid - Cookie sessionid del navegador
+   * @param {string} sessionid_sign - Cookie sessionid_sign del navegador
    */
-  async login() {
+  async updateCookies(sessionid, sessionid_sign) {
     try {
-      const payload = {
-        username: config.tvUsername,
-        password: config.tvPassword,
-        remember: 'on'
-      };
+      // Validar cookies antes de guardar
+      const isValid = await this.cookieManager.validateCookies(sessionid, sessionid_sign);
 
-      const formData = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      const userAgent = `TWAPI/3.0 (${os.type()}; ${os.release()}; ${os.arch()})`;
-
-      const response = await axios.post(urls.signin, formData, {
-        headers: {
-          ...formData.getHeaders(),
-          'origin': 'https://www.tradingview.com',
-          'User-Agent': userAgent,
-          'referer': 'https://www.tradingview.com'
-        },
-        timeout: 15000
-      });
-
-      // Extract session ID from cookies
-      const cookies = response.headers['set-cookie'];
-      if (cookies) {
-        const sessionCookie = cookies.find(cookie => cookie.includes('sessionid='));
-        if (sessionCookie) {
-          this.sessionId = sessionCookie.split('sessionid=')[1].split(';')[0];
-          await sessionStorage.setSessionId(this.sessionId);
-          authLogger.info('Login successful, session saved');
-          return;
-        }
+      if (!isValid) {
+        throw new Error('Cookies inválidas - verifica que hayas copiado correctamente las cookies del navegador');
       }
 
-      throw new Error('Session ID not found in response');
+      // Guardar cookies
+      const saved = await this.cookieManager.saveCookies(sessionid, sessionid_sign);
+
+      if (saved) {
+        // Actualizar propiedades de la instancia
+        this.sessionId = sessionid;
+        this.sessionIdSign = sessionid_sign;
+
+        authLogger.info('✅ Cookies actualizadas exitosamente');
+        return { success: true, message: 'Cookies actualizadas y validadas exitosamente' };
+      } else {
+        throw new Error('Error guardando cookies');
+      }
     } catch (error) {
-      authLogger.error({ error: error.message }, 'Login failed');
-      throw new Error(`Login failed: ${error.message}`);
+      authLogger.error({ error: error.message }, 'Error actualizando cookies');
+      throw error;
     }
+  }
+
+  /**
+   * Get TradingView profile data (similar al sistema Python)
+   * Extrae balance, username, partner status, etc.
+   */
+  async getProfileData() {
+    if (!this.sessionId || !this.sessionIdSign) {
+      return null;
+    }
+
+    try {
+      return await this.cookieManager.getProfileData(this.sessionId, this.sessionIdSign);
+    } catch (error) {
+      authLogger.debug({ error: error.message }, 'Error obteniendo datos del perfil');
+      return null;
+    }
+  }
+
+  /**
+   * Check if cookies are available and valid
+   */
+  isAuthenticated() {
+    return !!(this.sessionId && this.sessionIdSign);
   }
 
   /**
@@ -226,7 +247,7 @@ class TradingViewService {
           headers: {
             'origin': 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Cookie': `sessionid=${this.sessionId}`
+            'Cookie': `sessionid=${this.sessionId}; sessionid_sign=${this.sessionIdSign}`
           },
           timeout: 10000
         }
@@ -307,7 +328,7 @@ class TradingViewService {
           headers: {
             ...formData.getHeaders(),
             'origin': 'https://www.tradingview.com',
-            'cookie': `sessionid=${this.sessionId}`
+            'cookie': `sessionid=${this.sessionId}; sessionid_sign=${this.sessionIdSign}`
           },
           timeout: 15000
         });
@@ -860,5 +881,5 @@ class TradingViewService {
   }
 }
 
-// Export singleton instance
-module.exports = new TradingViewService();
+// Export class for instantiation
+module.exports = TradingViewService;

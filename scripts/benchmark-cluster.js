@@ -84,7 +84,7 @@ async function runBenchmark(serverCommand, serverName) {
       const requestStart = Date.now();
 
       try {
-        const response = await fetch('http://localhost:5000/api/validate/trendoscope');
+        const response = await fetch('http://localhost:5000/api/validate/apidevs');
         const requestEnd = Date.now();
 
         if (response.ok) {
@@ -145,7 +145,7 @@ async function main() {
   console.log('🧪 BENCHMARK COMPLETO: Comparación Single-threaded vs Clustering');
   console.log('⏰ Duración por test: 30 segundos');
   console.log('🔄 Requests concurrentes: 10');
-  console.log('📊 Endpoint: GET /api/validate/trendoscope');
+  console.log('📊 Endpoint: GET /api/validate/apidevs');
 
   try {
     // Test 1: Single-threaded

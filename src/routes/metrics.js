@@ -90,7 +90,7 @@ router.get('/health', apiAuth, async (req, res) => {
     const healthStart = Date.now();
     
     // Test rápido de conexión a TradingView
-    const testResult = await tradingViewService.validateUsername('trendoscope');
+    const testResult = await tradingViewService.validateUsername('apidevs');
     const healthTime = Date.now() - healthStart;
     const batcherStats = tradingViewService.requestBatcher.getStats();
     

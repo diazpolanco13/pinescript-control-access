@@ -7,12 +7,15 @@
  */
 
 const fs = require('fs');
-const tradingViewService = require('../src/services/tradingViewService');
+const TradingViewService = require('../src/services/tradingViewService');
 const { bulkLogger } = require('../src/utils/logger');
 
 async function showSystemStatus() {
   console.log('📊 STATUS CHECK: Sistema Optimizado TradingView Access Management\n');
   console.log('=' .repeat(70));
+
+  // Create TradingView service instance
+  const tradingViewService = new TradingViewService();
 
   try {
     // System Information
@@ -36,7 +39,36 @@ async function showSystemStatus() {
     try {
       await tradingViewService.init();
       console.log('   ✅ Servicio inicializado correctamente');
-      console.log('   ✅ Sesión TradingView activa');
+
+      // Check authentication status
+      if (tradingViewService.isAuthenticated()) {
+        console.log('   ✅ Cookies válidas - Sistema de autenticación activo');
+
+        // Try to get complete profile data (igual que el sistema Python)
+        try {
+          const profile = await tradingViewService.getProfileData();
+          if (profile && profile.username) {
+            console.log(`   👤 Usuario: @${profile.username}`);
+            console.log(`   💰 Balance: $${profile.balance}`);
+            console.log(`   🏆 Estado Partner: ${profile.partner_status === 1 ? '✅ Partner Activo' : '❌ Partner Inactivo'}`);
+            console.log(`   🆔 ID de Afiliado: ${profile.affiliate_id}`);
+            console.log(`   🖼️ Imagen de perfil: ${profile.profile_image ? '✅ Disponible' : '❌ No disponible'}`);
+            const verifiedDate = new Date(profile.last_verified);
+            const formattedDate = verifiedDate.toString() !== 'Invalid Date'
+              ? verifiedDate.toLocaleString('es-ES')
+              : 'Fecha no disponible';
+            console.log(`   🕒 Última verificación: ${formattedDate}`);
+
+            if (profile.profile_image) {
+              console.log(`   🔗 URL Imagen: ${profile.profile_image}`);
+            }
+          }
+        } catch (e) {
+          console.log('   ⚠️ No se pudo obtener datos del perfil');
+        }
+      } else {
+        console.log('   ⚠️ Sin cookies - Actualización manual requerida via /admin');
+      }
     } catch (error) {
       console.log('   ❌ Error inicializando servicio:', error.message);
     }

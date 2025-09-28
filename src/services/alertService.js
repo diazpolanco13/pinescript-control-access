@@ -11,7 +11,7 @@ class AlertService {
     this.enabled = !!(process.env.ALERT_EMAIL && process.env.ALERT_EMAIL_PASSWORD);
     
     if (this.enabled) {
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         service: process.env.EMAIL_SERVICE || 'gmail',
         auth: {
           user: process.env.ALERT_EMAIL,

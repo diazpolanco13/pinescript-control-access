@@ -37,7 +37,7 @@ ADMIN_EMAIL=admin@tu-dominio.com
 curl -X POST "http://localhost:5000/api/access/bulk" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: tv_api_2025_ultra_secure_xyz789" \
-  -d '{"users": ["trendoscope"], "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
+  -d '{"users": ["apidevs"], "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
 
 # Test SIN API key (debe fallar con 401):
 curl -X POST "http://localhost:5000/api/access/bulk" \
@@ -606,7 +606,7 @@ describe('TradingView Integration Tests', () => {
   
   test('Activar suscripción individual', async () => {
     const usuario = {
-      tradingview_username: 'trendoscope',
+      tradingview_username: 'apidevs',
       email: 'test@example.com'
     };
     
@@ -622,7 +622,7 @@ describe('TradingView Integration Tests', () => {
   });
   
   test('Cambio de plan LIFETIME → Mensual', async () => {
-    const usuario = { tradingview_username: 'trendoscope' };
+    const usuario = { tradingview_username: 'apidevs' };
     const planAnterior = { indicators: ['PUB;ebd861d70a9f478bb06fe60c5d8f469c'] };
     const planNuevo = { duration: '30D' };
     
@@ -635,7 +635,7 @@ describe('TradingView Integration Tests', () => {
   
   test('Operación masiva (lote pequeño)', async () => {
     const usuarios = [
-      { tradingview_username: 'trendoscope' },
+      { tradingview_username: 'apidevs' },
       { tradingview_username: 'user2' },
       { tradingview_username: 'user3' }
     ];
@@ -691,7 +691,7 @@ BULK_RESULT=$(curl -s -X POST "http://tu-servidor-api:5000/api/access/bulk" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $TRADINGVIEW_API_KEY" \
   -d '{
-    "users": ["trendoscope"],
+    "users": ["apidevs"],
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
     "duration": "7D"
   }')
@@ -777,7 +777,7 @@ node scripts/test-ecommerce-integration.js
 # Test específico de endpoint:
 curl -X POST "http://localhost:5000/api/access/bulk" \
   -H "X-API-Key: test_api_key_secure_2025" \
-  -d '{"users": ["trendoscope"], "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
+  -d '{"users": ["apidevs"], "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
 ```
 
 ---

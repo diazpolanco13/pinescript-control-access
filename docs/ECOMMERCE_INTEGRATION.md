@@ -193,7 +193,7 @@ router.get('/stats', apiAuth, async (req, res) => {
 router.get('/health', apiAuth, async (req, res) => {
   try {
     // Test rápido de conexión a TradingView
-    await tradingViewService.validateUsername('trendoscope');
+    await tradingViewService.validateUsername('apidevs');
     
     res.json({
       status: 'healthy',

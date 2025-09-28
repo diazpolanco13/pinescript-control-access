@@ -20,7 +20,7 @@ async function runBulkTest() {
 
     // Test parameters
     const users = [
-      'trendoscope',
+      'apidevs',
       'apidev7loper', // This might not exist, but shows error handling
       'testuser1',
       'testuser2',

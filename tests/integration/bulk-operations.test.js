@@ -14,7 +14,7 @@ describe('🔗 Bulk Operations Integration', () => {
 
   describe('📊 Real Bulk Access Grant', () => {
     test('should successfully grant access to multiple users', async () => {
-      const users = ['trendoscope']; // Single user for reliable testing
+      const users = ['apidevs']; // Single user for reliable testing
       const pineIds = ['PUB;ebd861d70a9f478bb06fe60c5d8f469c'];
       const duration = '7D';
 
@@ -91,7 +91,7 @@ describe('🔗 Bulk Operations Integration', () => {
         const startTime = Date.now();
 
         await request(app)
-          .get('/api/validate/trendoscope')
+          .get('/api/validate/apidevs')
           .expect(200);
 
         const duration = Date.now() - startTime;
@@ -118,7 +118,7 @@ describe('🔗 Bulk Operations Integration', () => {
 
       const requests = Array(concurrentRequests).fill().map((_, index) =>
         request(app)
-          .get('/api/validate/trendoscope')
+          .get('/api/validate/apidevs')
           .set('X-Request-ID', `test-${index}`)
       );
 
@@ -155,7 +155,7 @@ describe('🔗 Bulk Operations Integration', () => {
     test('should maintain service availability under load', async () => {
       // Send multiple requests rapidly
       const requests = Array(10).fill().map(() =>
-        request(app).get('/api/validate/trendoscope')
+        request(app).get('/api/validate/apidevs')
       );
 
       const results = await Promise.allSettled(requests);

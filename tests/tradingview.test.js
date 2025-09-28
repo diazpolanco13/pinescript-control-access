@@ -24,7 +24,7 @@ jest.mock('../src/services/tradingViewService');
 
 // Test constants
 const TEST_USERS = {
-  valid: 'trendoscope',
+  valid: 'apidevs',
   invalid: 'nonexistentuser12345',
   withSpecialChars: 'test_user@example.com'
 };
@@ -110,7 +110,7 @@ describe('🚀 TradingView Access Management API v2.0', () => {
       });
 
       test.concurrent('should handle username case insensitivity', async () => {
-        const username = 'Trendoscope';
+        const username = 'apidevs';
         axios.get.mockResolvedValueOnce({
           status: 200,
           data: [{ username: username.toLowerCase() }]
