@@ -127,7 +127,7 @@ TV_USERNAME=tu_usuario_tradingview
 TV_PASSWORD=tu_password_tradingview
 
 # Server Configuration
-PORT=5000
+PORT=5001
 NODE_ENV=development
 ```
 
@@ -184,6 +184,146 @@ npm run test:bulk
 - `422` - Usuario inválido o rate limit
 - `429` - Rate limit excedido
 - `500` - Error interno del servidor
+
+### 🎛️ Panel de Administración
+
+#### **`GET /admin`**
+Acceso al panel web de administración.
+
+**Descripción:** Interfaz web completa para gestión de cookies, validación de usuarios y operaciones administrativas.
+
+**Autenticación:** Requiere token de admin (se muestra en consola al iniciar servidor)
+
+---
+
+### 🔐 Endpoints de Administración (Protegidos)
+
+> **🔑 Autenticación Requerida**: Todos los endpoints requieren header `X-Admin-Token`
+
+#### **`POST /admin/login`**
+Inicio de sesión administrativo.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "token": "admin_token_from_console"
+}
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "success": true,
+  "message": "Login exitoso",
+  "redirect": "/admin"
+}
+```
+
+#### **`GET /admin/cookies/status`**
+Verificar estado actual de las cookies de TradingView.
+
+**Headers:**
+```
+X-Admin-Token: your_admin_token
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "valid": true,
+  "username": "apidevelopers",
+  "profile_data": {
+    "balance": 13.44,
+    "partner_status": 1,
+    "affiliate_id": 30182,
+    "last_verified": "2025-09-28T19:51:33.000Z"
+  }
+}
+```
+
+#### **`POST /admin/cookies/update`**
+Actualizar cookies de TradingView manualmente.
+
+**Headers:**
+```
+X-Admin-Token: your_admin_token
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "sessionid": "session_cookie_value",
+  "sessionid_sign": "session_sign_cookie_value"
+}
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "success": true,
+  "message": "Cookies actualizadas y validadas exitosamente"
+}
+```
+
+#### **`POST /admin/cookies/clear`**
+Eliminar cookies almacenadas.
+
+**Headers:**
+```
+X-Admin-Token: your_admin_token
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "success": true,
+  "message": "Cookies eliminadas exitosamente"
+}
+```
+
+---
+
+### 🖼️ Endpoints Públicos
+
+#### **`GET /profile/:username`**
+Obtener imagen de perfil de usuario de TradingView.
+
+**Descripción:** Endpoint público que scrapea la página de perfil de TradingView para extraer la URL de imagen de perfil. No requiere autenticación.
+
+**Parámetros:**
+- `username` (string) - Nombre de usuario de TradingView
+
+**Ejemplos:**
+```bash
+curl "http://localhost:5001/profile/apidevelopers"
+curl "http://localhost:5001/profile/trendoscope"
+```
+
+**Respuesta de Éxito (200):**
+```json
+{
+  "success": true,
+  "username": "apidevelopers",
+  "profile_image": "https://s3.tradingview.com/userpics/26525177-GBIJ_orig.png",
+  "source": "public_profile"
+}
+```
+
+**Respuesta de Error (404):**
+```json
+{
+  "success": false,
+  "username": "nonexistentuser",
+  "profile_image": null,
+  "message": "Profile image not found or user does not exist"
+}
+```
 
 ### 👤 Validación de Usuario
 ```http
@@ -406,19 +546,22 @@ POST /api/access/bulk
 
 ## 🧪 Testing y Ejemplos
 
-### 🚀 Inicio Rápido (3 comandos)
+### 🚀 Inicio Rápido (4 pasos)
 
 ```bash
 # 1. Iniciar servidor
 npm start
 
-# 2. Validar que funciona
-curl "http://localhost:5000/api/validate/apidevs"
+# 2. Copiar token de admin (se muestra en consola del servidor)
+# Ejemplo: 🔐 Admin token generado para esta sesión: abc123...
 
-# 3. Conceder acceso de prueba
-curl -X POST "http://localhost:5000/api/access/apidevs" \
-  -H "Content-Type: application/json" \
-  -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"], "duration": "7D"}'
+# 3. Acceder al panel de administración
+# Abre: http://localhost:5001/admin
+# Pega el token copiado
+
+# 4. Probar endpoints públicos
+curl "http://localhost:5001/profile/apidevelopers"
+curl "http://localhost:5001/api/validate/apidevelopers"
 ```
 
 ### 📋 Ejemplos Completos por Endpoint
@@ -426,16 +569,47 @@ curl -X POST "http://localhost:5000/api/access/apidevs" \
 #### 👤 Validar Usuario
 ```bash
 # Verificar si usuario existe
-curl -s "http://localhost:5000/api/validate/apidevs" | jq
+curl -s "http://localhost:5001/api/validate/apidevelopers" | jq
+```
+
+#### 🖼️ Obtener Imagen de Perfil (Público)
+```bash
+# Obtener imagen de perfil (no requiere autenticación)
+curl -s "http://localhost:5001/profile/apidevelopers" | jq
+
+# Ejemplos con diferentes usuarios
+curl -s "http://localhost:5001/profile/trendoscope" | jq
+curl -s "http://localhost:5001/profile/nonexistentuser" | jq
+```
+
+#### 🎛️ Panel de Administración
+```bash
+# 1. Iniciar servidor para obtener token
+npm start
+# Copia el token que aparece en consola
+
+# 2. Acceder al panel web
+# Abre en navegador: http://localhost:5001/admin
+
+# 3. Usar endpoints protegidos (requieren token)
+TOKEN="tu_token_de_admin"
+
+# Verificar estado de cookies
+curl -H "X-Admin-Token: $TOKEN" "http://localhost:5001/admin/cookies/status"
+
+# Actualizar cookies manualmente
+curl -X POST -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"sessionid": "tu_sessionid", "sessionid_sign": "tu_sessionid_sign"}' \
+  "http://localhost:5001/admin/cookies/update"
 ```
 
 #### 🔍 Consultar Acceso Actual
 ```bash
 # Ver todo el acceso del usuario
-curl -s "http://localhost:5000/api/access/apidevs" | jq
+curl -s "http://localhost:5001/api/access/apidevs" | jq
 
 # Ver acceso a indicadores específicos
-curl -X GET "http://localhost:5000/api/access/apidevs" \
+curl -X GET "http://localhost:5001/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{"pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]}' | jq
 ```
@@ -443,7 +617,7 @@ curl -X GET "http://localhost:5000/api/access/apidevs" \
 #### ➕ Conceder Acceso
 ```bash
 # Acceso por 7 días
-curl -X POST "http://localhost:5000/api/access/apidevs" \
+curl -X POST "http://localhost:5001/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
@@ -451,7 +625,7 @@ curl -X POST "http://localhost:5000/api/access/apidevs" \
   }' | jq
 
 # Acceso por 30 días
-curl -X POST "http://localhost:5000/api/access/johndoe" \
+curl -X POST "http://localhost:5001/api/access/johndoe" \
   -H "Content-Type: application/json" \
   -d '{
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
@@ -462,7 +636,7 @@ curl -X POST "http://localhost:5000/api/access/johndoe" \
 #### ➖ Remover Acceso
 ```bash
 # Remover acceso a indicadores específicos
-curl -X DELETE "http://localhost:5000/api/access/apidevs" \
+curl -X DELETE "http://localhost:5001/api/access/apidevs" \
   -H "Content-Type: application/json" \
   -d '{
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
@@ -472,7 +646,7 @@ curl -X DELETE "http://localhost:5000/api/access/apidevs" \
 #### 🚀 Operación Masiva (⭐ Recomendado)
 ```bash
 # Conceder acceso a múltiples usuarios
-curl -X POST "http://localhost:5000/api/access/bulk" \
+curl -X POST "http://localhost:5001/api/access/bulk" \
   -H "Content-Type: application/json" \
   -d '{
     "users": ["user1", "user2", "user3"],
@@ -507,7 +681,7 @@ curl -X POST "http://localhost:5000/api/access/bulk" \
 #### 🗑️ **Revocación Masiva (⭐ Para Suscripciones Vencidas)**
 ```bash
 # Quitar acceso a múltiples usuarios (ej: suscripciones vencidas)
-curl -X POST "http://localhost:5000/api/access/bulk-remove" \
+curl -X POST "http://localhost:5001/api/access/bulk-remove" \
   -H "Content-Type: application/json" \
   -d '{
     "users": ["usuario1", "usuario2", "usuario3"],
@@ -518,7 +692,7 @@ curl -X POST "http://localhost:5000/api/access/bulk-remove" \
 ### 🔄 **Reemplazar Acceso (⭐ NUEVO - Para Cambios de Plan)**
 ```bash
 # Cambiar plan: Remover acceso actual + Añadir nuevo (workflow automático)
-curl -X POST "http://localhost:5000/api/access/replace" \
+curl -X POST "http://localhost:5001/api/access/replace" \
   -H "Content-Type: application/json" \
   -d '{
     "users": ["usuario1", "usuario2"],
@@ -533,7 +707,7 @@ curl -X POST "http://localhost:5000/api/access/replace" \
 ### ⚙️ **Configuración TradingView (⭐ NUEVO - Dashboard Web)**
 ```bash
 # Probar credenciales TradingView
-curl -X POST "http://localhost:5000/api/config/tradingview" \
+curl -X POST "http://localhost:5001/api/config/tradingview" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "tu_usuario_tradingview",
@@ -542,7 +716,7 @@ curl -X POST "http://localhost:5000/api/config/tradingview" \
   }'
 
 # Guardar credenciales TradingView  
-curl -X POST "http://localhost:5000/api/config/tradingview" \
+curl -X POST "http://localhost:5001/api/config/tradingview" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "tu_usuario_tradingview", 
@@ -551,7 +725,7 @@ curl -X POST "http://localhost:5000/api/config/tradingview" \
   }'
 
 # Ver estado de configuración
-curl -X GET "http://localhost:5000/api/config/tradingview/status"
+curl -X GET "http://localhost:5001/api/config/tradingview/status"
 ```
 
 **Casos de uso ideales para `/replace`:**
@@ -611,7 +785,7 @@ npm run test:bulk
 ```bash
 # Después de ejecutar npm run dev:full:
 # Frontend: http://localhost:5173
-# Backend:  http://localhost:5000
+# Backend:  http://localhost:5001
 ```
 
 ### ✨ Características del Dashboard
@@ -672,12 +846,12 @@ npm run build:dashboard
     {
       "name": "Validate User",
       "method": "GET",
-      "url": "http://localhost:5000/api/validate/{{username}}"
+      "url": "http://localhost:5001/api/validate/{{username}}"
     },
     {
       "name": "Grant Access",
       "method": "POST",
-      "url": "http://localhost:5000/api/access/{{username}}",
+      "url": "http://localhost:5001/api/access/{{username}}",
       "headers": {"Content-Type": "application/json"},
       "body": {
         "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
@@ -687,7 +861,7 @@ npm run build:dashboard
     {
       "name": "Bulk Access",
       "method": "POST",
-      "url": "http://localhost:5000/api/access/bulk",
+      "url": "http://localhost:5001/api/access/bulk",
       "headers": {"Content-Type": "application/json"},
       "body": {
         "users": ["user1", "user2"],
@@ -703,7 +877,7 @@ npm run build:dashboard
 
 ```bash
 # Usuario inválido
-curl -s "http://localhost:5000/api/validate/usuarioquenoexiste" | jq
+curl -s "http://localhost:5001/api/validate/usuarioquenoexiste" | jq
 # {"errorMessage":"Username validation failed","details":"User does not exist"}
 
 # Rate limit excedido
