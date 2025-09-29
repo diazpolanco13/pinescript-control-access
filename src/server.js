@@ -96,9 +96,8 @@ app.get('/', (req, res) => {
 // Initialize admin authentication (similar al sistema Python)
 const adminToken = initAdminAuth();
 
-// Initialize TradingView service globally
-const TradingViewService = require('./services/tradingViewService');
-const tradingViewService = new TradingViewService();
+// Initialize TradingView service globally (singleton instance)
+const tradingViewService = require('./services/tradingViewService');
 
 // Connect TradingView service to admin routes
 setTradingViewService(tradingViewService);
