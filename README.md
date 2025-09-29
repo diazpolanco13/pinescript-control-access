@@ -243,15 +243,19 @@ X-Admin-Token: your_admin_token
 ```json
 {
   "valid": true,
-  "username": "apidevelopers",
+  "username": "tu_usuario_tradingview",
   "profile_data": {
-    "balance": 13.44,
+    "balance": 25.50,
+    "username": "tu_usuario_tradingview",
     "partner_status": 1,
-    "affiliate_id": 30182,
-    "last_verified": "2025-09-28T19:51:33.000Z"
+    "affiliate_id": 12345,
+    "currency": "USD",
+    "last_verified": "2025-09-29T12:00:00.000Z"
   }
 }
 ```
+
+> **Nota:** Los datos del perfil se obtienen automáticamente de tu cuenta de TradingView una vez autenticado el sistema.
 
 #### **`POST /admin/cookies/update`**
 Actualizar cookies de TradingView manualmente.
