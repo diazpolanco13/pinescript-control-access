@@ -483,10 +483,108 @@ class TradingViewService {
   async bulkGrantAccess(users, pineIds, duration, options = {}) {
     const {
       onProgress = null,
-      preValidateUsers = false // OPTIMIZADO: Default false para mejor rendimiento
+      preValidateUsers = false, // OPTIMIZADO: Default false para mejor rendimiento
+      batchSize = 5,
+      delayMs = 200,
+      maxConcurrent = 3
     } = options;
 
     await this.init();
+
+    // FAST MODE: For small operations (≤5 users), skip complex batching
+    const isSmallOperation = users.length <= 5 && pineIds.length <= 3;
+    if (isSmallOperation) {
+      bulkLogger.info('⚡ Using FAST mode for small operation', {
+        users: users.length,
+        pineIds: pineIds.length,
+        totalOps: users.length * pineIds.length
+      });
+      return await this._bulkGrantAccessFast(users, pineIds, duration, options);
+    }
+
+    // STANDARD MODE: Use complex batching for large operations
+    bulkLogger.info('🚀 Using STANDARD mode for large operation', {
+      users: users.length,
+      pineIds: pineIds.length,
+      totalOps: users.length * pineIds.length
+    });
+    return await this._bulkGrantAccessStandard(users, pineIds, duration, options);
+  }
+
+  // FAST MODE: Direct processing without complex batching
+  async _bulkGrantAccessFast(users, pineIds, duration, options = {}) {
+    const { onProgress = null } = options;
+    const startTime = Date.now();
+    const totalOperations = users.length * pineIds.length;
+
+    let processed = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    const results = [];
+
+    // Process all combinations directly
+    for (const user of users) {
+      for (const pineId of pineIds) {
+        try {
+          const result = await this.grantAccess(user, pineId, duration);
+          results.push(result);
+
+          if (result.status === 'Success') {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+
+          processed++;
+          if (onProgress) {
+            onProgress(processed, totalOperations, successCount, errorCount);
+          }
+        } catch (error) {
+          bulkLogger.error({
+            error: error.message,
+            user,
+            pineId,
+            duration
+          }, 'Fast bulk grant access failed for user');
+
+          results.push({
+            pine_id: pineId,
+            username: user,
+            hasAccess: false,
+            noExpiration: false,
+            currentExpiration: null,
+            status: 'Failure',
+            error: error.message
+          });
+          errorCount++;
+          processed++;
+        }
+      }
+    }
+
+    const executionTime = Date.now() - startTime;
+    const successRate = Math.round((successCount / totalOperations) * 100);
+
+    return {
+      total: totalOperations,
+      success: successCount,
+      errors: errorCount,
+      duration: executionTime,
+      successRate,
+      results,
+      skippedUsers: [],
+      totalUsersAttempted: users.length,
+      validUsersProcessed: users.length,
+      batcherStats: { batchesProcessed: 1, avgResponseTime: 0, finalDelay: 0, circuitBreakerActivated: false }
+    };
+  }
+
+  // STANDARD MODE: Original complex batching for large operations
+  async _bulkGrantAccessStandard(users, pineIds, duration, options = {}) {
+    const {
+      onProgress = null,
+      preValidateUsers = false
+    } = options;
 
     // Pre-validate users if requested
     let usersToProcess = users;
@@ -494,13 +592,13 @@ class TradingViewService {
 
     if (preValidateUsers && users.length > 1) {
       bulkLogger.info('🔍 Pre-validating users before bulk grant access');
-      validationResults = await this.validateUsersBatch(users, { maxConcurrent: 8 }); // OPTIMIZADO
+      validationResults = await this.validateUsersBatch(users, { maxConcurrent: 8 });
 
       usersToProcess = validationResults.validUsers;
 
       if (validationResults.invalidUsers.length > 0) {
         bulkLogger.warn(`${validationResults.invalidUsers.length} invalid users skipped`, {
-          invalidUsers: validationResults.invalidUsers.slice(0, 5), // Show first 5
+          invalidUsers: validationResults.invalidUsers.slice(0, 5),
           totalSkipped: validationResults.invalidUsers.length
         });
       }

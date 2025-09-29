@@ -545,6 +545,103 @@
                 </form>
             </div>
 
+            <!-- QUICK TEST INPUTS -->
+            <div class="glass-card rounded-2xl p-6 card-hover tech-border mb-6">
+                <div class="flex items-center mb-4">
+                    <div class="p-2 rounded-lg bg-green-500/20 mr-3">
+                        <svg class="w-6 h-6 text-green-400 glow-effect" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-green-400 neon-text">⚡ Quick Test Inputs</h3>
+                        <p class="text-gray-400 text-sm">Valores por defecto para pruebas rápidas</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Single User Input -->
+                    <div class="group">
+                        <label for="singleUser" class="block text-sm font-semibold text-cyan-300 mb-2">
+                            👤 Usuario Individual
+                        </label>
+                        <div class="relative">
+                        <input
+                            type="text"
+                            id="singleUser"
+                            value="testuser1"
+                            placeholder="Usuario para pruebas individuales"
+                                class="w-full px-4 py-3 bg-gray-800/50 border border-cyan-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-gray-400 transition-all duration-300 backdrop-blur-sm"
+                        >
+                            <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
+                    </div>
+
+                    <!-- Bulk Users Input -->
+                    <div class="group">
+                        <label for="bulkUsers" class="block text-sm font-semibold text-purple-300 mb-2">
+                            👥 Usuarios Bulk (separados por coma)
+                        </label>
+                        <div class="relative">
+                        <input
+                            type="text"
+                            id="bulkUsers"
+                            value="testuser1,testuser2"
+                            placeholder="Usuarios para operaciones masivas"
+                                class="w-full px-4 py-3 bg-gray-800/50 border border-purple-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 text-white placeholder-gray-400 transition-all duration-300 backdrop-blur-sm"
+                        >
+                            <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
+                    </div>
+
+                    <!-- Pine ID Input -->
+                    <div class="group">
+                        <label for="defaultPineId" class="block text-sm font-semibold text-blue-300 mb-2">
+                            📊 Pine ID
+                        </label>
+                        <div class="relative">
+                        <input
+                            type="text"
+                            id="defaultPineId"
+                            value="PUB;ebd861d70a9f478bb06fe60c5d8f469c"
+                            placeholder="ID del indicador"
+                                class="w-full px-4 py-3 bg-gray-800/50 border border-blue-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-gray-400 transition-all duration-300 backdrop-blur-sm font-mono text-sm"
+                        >
+                            <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
+                    </div>
+
+                    <!-- Duration Select -->
+                    <div class="group">
+                        <label for="defaultDuration" class="block text-sm font-semibold text-orange-300 mb-2">
+                            ⏱️ Duración
+                        </label>
+                        <div class="relative">
+                        <select
+                            id="defaultDuration"
+                                class="w-full px-4 py-3 bg-gray-800/50 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-white transition-all duration-300 backdrop-blur-sm"
+                        >
+                            <option value="7D">7 Días</option>
+                            <option value="30D">30 Días</option>
+                            <option value="90D">90 Días</option>
+                            <option value="1Y">1 Año</option>
+                            <option value="1L">Lifetime</option>
+                        </select>
+                            <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-gradient-to-r from-gray-800/40 to-gray-900/40 rounded-lg border border-cyan-500/20">
+                    <div class="flex items-center text-cyan-400 text-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>💡 Modifica estos valores y luego usa los botones de prueba abajo</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- COMPLETE ENDPOINTS TESTING CENTER -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
@@ -1064,6 +1161,15 @@
         // Refresh status button
         document.getElementById('refreshStatusBtn').addEventListener('click', checkCookieStatus);
 
+        // HELPER FUNCTION FOR INPUT VALUES
+        function getInputValue(inputId, defaultValue) {
+            const element = document.getElementById(inputId);
+            if (!element) return defaultValue;
+
+            const value = element.value.trim();
+            return value || defaultValue;
+        }
+
         // TESTING SYSTEM VARIABLES
         let testsExecuted = 0;
         let testsSuccessful = 0;
@@ -1158,8 +1264,7 @@
 
         // VALIDATE USER TEST
         async function testValidateUser() {
-            const username = prompt('Ingresa un username para validar:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
 
             const response = await fetch(`/api/validate/${username}`, {
                 method: 'GET',
@@ -1169,7 +1274,7 @@
             });
 
             const data = await response.json();
-            
+
             return {
                 endpoint: 'GET /api/validate/:username',
                 username: username,
@@ -1182,27 +1287,31 @@
 
         // ACCESS QUERY TEST
         async function testAccessQuery() {
-            const username = prompt('Ingresa un username para consultar acceso:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
+            const pineIdString = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
 
-            const pineIds = prompt('Pine IDs (opcional, separados por coma):', '');
-            
-            const body = pineIds ? { pine_ids: pineIds.split(',').map(id => id.trim()) } : {};
-            
-            const response = await fetch(`/api/access/${username}`, {
+            const pineIdsArray = pineIdString.split(',').map(id => id.trim());
+
+            const startTime = Date.now();
+            // Usar GET con query parameters
+            const queryParams = new URLSearchParams({
+                pine_ids: JSON.stringify(pineIdsArray)
+            });
+
+            const response = await fetch(`/api/access/${username}?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined
+                }
             });
-
+            const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'GET /api/access/:username',
                 username: username,
-                pine_ids: body.pine_ids || 'all',
+                pine_ids: pineIdsArray,
+                execution_time: `${endTime - startTime}ms`,
                 status: response.status,
                 success: response.ok,
                 response: data,
@@ -1212,15 +1321,11 @@
 
         // GRANT ACCESS TEST
         async function testGrantAccess() {
-            const username = prompt('Ingresa un username para conceder acceso:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            const duration = getInputValue('defaultDuration', '7D');
 
-            const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
-
-            const duration = prompt('Duración (7D, 30D, 1Y, etc.):', '7D');
-            if (!duration) throw new Error('Duración requerida');
-
+            const startTime = Date.now();
             const response = await fetch(`/api/access/${username}`, {
                 method: 'POST',
                 headers: {
@@ -1231,14 +1336,15 @@
                     duration: duration
                 })
             });
-
+            const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'POST /api/access/:username',
                 username: username,
                 pine_ids: [pineId],
                 duration: duration,
+                execution_time: `${endTime - startTime}ms`,
                 status: response.status,
                 success: response.ok,
                 response: data,
@@ -1248,53 +1354,46 @@
 
         // BULK OPERATION TEST
         async function testBulkOperation() {
-            const usersInput = prompt('Ingresa usernames separados por coma:', 'testuser1,testuser2,apidevs');
-            if (!usersInput) throw new Error('Lista de usuarios requerida');
-
+            const usersInput = getInputValue('bulkUsers', 'testuser1,testuser2');
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
-            
-            const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
 
-            const duration = prompt('Duración (7D, 30D, 1Y, etc.):', '7D');
-            if (!duration) throw new Error('Duración requerida');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            const duration = getInputValue('defaultDuration', '7D');
 
-            const operation = confirm('¿Operación BULK ADD? (Cancelar para BULK REMOVE)') ? 'add' : 'remove';
+            // For this generic function, default to ADD operation
+            const operation = 'add';
+            const endpoint = '/api/access/bulk';
 
-            const endpoint = operation === 'add' ? '/api/access/bulk' : '/api/access/bulk-remove';
-            
             const body = {
                 users: users,
                 pine_ids: [pineId],
+                duration: duration,
                 options: {
                     preValidateUsers: true,
                     onProgress: true
                 }
             };
 
-            if (operation === 'add') {
-                body.duration = duration;
-            }
-
             const startTime = Date.now();
-            
+
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your_ultra_secure_api_key_2025'
                 },
                 body: JSON.stringify(body)
             });
 
             const data = await response.json();
             const endTime = Date.now();
-            
+
             return {
                 endpoint: `POST ${endpoint}`,
                 operation: operation.toUpperCase(),
                 users: users,
                 pine_ids: [pineId],
-                duration: operation === 'add' ? duration : 'N/A',
+                duration: duration,
                 execution_time: `${endTime - startTime}ms`,
                 status: response.status,
                 success: response.ok,
@@ -1305,14 +1404,13 @@
 
         // INDIVIDUAL ENDPOINT TEST FUNCTIONS
         async function testProfileEndpoint() {
-            const username = prompt('Ingresa username para obtener imagen de perfil:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
 
             const startTime = Date.now();
             const response = await fetch(`/profile/${username}`);
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'GET /profile/:username',
                 username: username,
@@ -1324,14 +1422,13 @@
         }
 
         async function testValidateEndpoint() {
-            const username = prompt('Ingresa username para validar:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
 
             const startTime = Date.now();
             const response = await fetch(`/api/validate/${username}`);
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'GET /api/validate/:username',
                 username: username,
@@ -1343,13 +1440,10 @@
         }
 
         async function testAccessEndpoint() {
-            const username = prompt('Ingresa un username para consultar acceso:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
+            const username = getInputValue('singleUser', 'testuser1');
+            const pineIdString = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
 
-            const pineIds = prompt('Pine IDs (separados por coma):', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineIds) throw new Error('Pine IDs requeridos');
-
-            const pineIdsArray = pineIds.split(',').map(id => id.trim());
+            const pineIdsArray = pineIdString.split(',').map(id => id.trim());
 
             const startTime = Date.now();
             // Usar GET con query parameters (arreglado en backend)
@@ -1378,14 +1472,9 @@
         }
 
         async function testGrantEndpoint() {
-            const username = prompt('Ingresa username para conceder acceso:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
-
-            const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
-
-            const duration = prompt('Duración (7D, 30D, 1Y, etc.):', '7D');
-            if (!duration) throw new Error('Duración requerida');
+            const username = getInputValue('singleUser', 'testuser1');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            const duration = getInputValue('defaultDuration', '7D');
 
             const startTime = Date.now();
             const response = await fetch(`/api/access/${username}`, {
@@ -1395,7 +1484,7 @@
             });
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'POST /api/access/:username',
                 username: username,
@@ -1409,11 +1498,8 @@
         }
 
         async function testRemoveEndpoint() {
-            const username = prompt('Ingresa username para remover acceso:', 'apidevs');
-            if (!username) throw new Error('Username requerido');
-
-            const pineId = prompt('Pine ID a remover:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
+            const username = getInputValue('singleUser', 'testuser1');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
 
             const startTime = Date.now();
             const response = await fetch(`/api/access/${username}`, {
@@ -1423,7 +1509,7 @@
             });
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'DELETE /api/access/:username',
                 username: username,
@@ -1436,18 +1522,30 @@
         }
 
         async function testBulkEndpoint() {
-            const usersInput = prompt('Ingresa usernames separados por coma:', 'testuser1,testuser2,apidevs');
-            if (!usersInput) throw new Error('Lista de usuarios requerida');
-
+            const usersInput = getInputValue('bulkUsers', 'testuser1,testuser2');
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
 
-            const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
-
-            const duration = prompt('Duración (7D, 30D, 1Y, etc.):', '7D');
-            if (!duration) throw new Error('Duración requerida');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            const duration = getInputValue('defaultDuration', '7D');
 
             const startTime = Date.now();
+
+            // Para pocos usuarios, usar configuración optimizada para velocidad
+            const useFastMode = users.length <= 5;
+            const options = useFastMode ? {
+                preValidateUsers: false,
+                onProgress: false,
+                batchSize: Math.min(users.length, 5),
+                delayMs: 50,
+                maxConcurrent: Math.min(users.length, 3)
+            } : {
+                preValidateUsers: false,
+                onProgress: false,
+                batchSize: 5,
+                delayMs: 100,
+                maxConcurrent: 3
+            };
+
             const response = await fetch('/api/access/bulk', {
                 method: 'POST',
                 headers: {
@@ -1458,14 +1556,14 @@
                     users: users,
                     pine_ids: [pineId],
                     duration: duration,
-                    options: { preValidateUsers: true, onProgress: true }
+                    options: options
                 })
             });
             const endTime = Date.now();
             const data = await response.json();
 
             return {
-                endpoint: 'POST /api/access/bulk',
+                endpoint: `POST /api/access/bulk (${useFastMode ? 'FAST' : 'STANDARD'} mode - ${users.length} users)`,
                 users: users,
                 pine_ids: [pineId],
                 duration: duration,
@@ -1477,15 +1575,29 @@
         }
 
         async function testBulkRemoveEndpoint() {
-            const usersInput = prompt('Ingresa usernames para remover (separados por coma):', 'testuser1,testuser2');
-            if (!usersInput) throw new Error('Lista de usuarios requerida');
-
+            const usersInput = getInputValue('bulkUsers', 'testuser1,testuser2');
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
 
-            const pineId = prompt('Pine ID a remover:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
 
             const startTime = Date.now();
+
+            // Para pocos usuarios, usar configuración optimizada
+            const useFastMode = users.length <= 5;
+            const options = useFastMode ? {
+                preValidateUsers: false,
+                onProgress: false,
+                batchSize: Math.min(users.length, 5),
+                delayMs: 50,
+                maxConcurrent: Math.min(users.length, 3)
+            } : {
+                preValidateUsers: false,
+                onProgress: false,
+                batchSize: 5,
+                delayMs: 100,
+                maxConcurrent: 3
+            };
+
             const response = await fetch('/api/access/bulk-remove', {
                 method: 'POST',
                 headers: {
@@ -1495,14 +1607,14 @@
                 body: JSON.stringify({
                     users: users,
                     pine_ids: [pineId],
-                    options: { preValidateUsers: true }
+                    options: options
                 })
             });
             const endTime = Date.now();
             const data = await response.json();
 
             return {
-                endpoint: 'POST /api/access/bulk-remove',
+                endpoint: `POST /api/access/bulk-remove (${useFastMode ? 'FAST' : 'STANDARD'} mode)`,
                 users: users,
                 pine_ids: [pineId],
                 execution_time: `${endTime - startTime}ms`,
@@ -1513,18 +1625,28 @@
         }
 
         async function testReplaceEndpoint() {
-            const usersInput = prompt('Ingresa usernames para reemplazar (separados por coma):', 'testuser1,testuser2');
-            if (!usersInput) throw new Error('Lista de usuarios requerida');
-
+            const usersInput = getInputValue('bulkUsers', 'testuser1,testuser2');
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
 
-            const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
-            if (!pineId) throw new Error('Pine ID requerido');
-
-            const duration = prompt('Nueva duración (7D, 30D, 1Y, etc.):', '30D');
-            if (!duration) throw new Error('Duración requerida');
+            const pineId = getInputValue('defaultPineId', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            const duration = getInputValue('defaultDuration', '7D');
 
             const startTime = Date.now();
+
+            // Para pocos usuarios, usar configuración optimizada
+            const useFastMode = users.length <= 5;
+            const options = useFastMode ? {
+                preValidateUsers: false,
+                batchSize: Math.min(users.length, 5),
+                delayMs: 50,
+                maxConcurrent: Math.min(users.length, 3)
+            } : {
+                preValidateUsers: false,
+                batchSize: 5,
+                delayMs: 100,
+                maxConcurrent: 3
+            };
+
             const response = await fetch('/api/access/replace', {
                 method: 'POST',
                 headers: {
@@ -1535,14 +1657,14 @@
                     users: users,
                     pine_ids: [pineId],
                     duration: duration,
-                    options: { preValidateUsers: false }
+                    options: options
                 })
             });
             const endTime = Date.now();
             const data = await response.json();
 
             return {
-                endpoint: 'POST /api/access/replace',
+                endpoint: `POST /api/access/replace (${useFastMode ? 'FAST' : 'STANDARD'} mode)`,
                 users: users,
                 pine_ids: [pineId],
                 duration: duration,
