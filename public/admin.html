@@ -1004,6 +1004,9 @@
 
                 const data = await response.json();
 
+                // Debug logging
+                console.log('🔍 Cookie status response:', data);
+
                 if (data.valid && data.profile_data) {
                     const profile = data.profile_data;
                     statusDiv.className = 'mb-8 rounded-xl bg-gradient-to-r from-green-900/40 to-green-800/40 border border-green-500/30 tech-border overflow-hidden';
@@ -1089,6 +1092,7 @@
                     // Cargar imagen de perfil desde el endpoint público
                     loadProfileImage(profile.username || data.username);
                 } else {
+                    console.log('❌ Mostrando estado rojo - condición no cumplida:', { valid: data.valid, hasProfileData: !!data.profile_data });
                     statusDiv.className = 'mb-8 rounded-xl bg-gradient-to-r from-red-900/40 to-red-800/40 border border-red-500/30 tech-border overflow-hidden';
                     indicator.textContent = '❌';
                     text.textContent = 'Cookies inválidas o expiradas';
