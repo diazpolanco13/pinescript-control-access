@@ -81,15 +81,20 @@ app.get('/', (req, res) => {
       endpoints: {
         health: 'GET /',
         documentation: 'GET /doc-endpoint (AI-READABLE DOCS)',
+        admin: 'GET /admin (REQUIRES TOKEN)',
         validate: 'GET /api/validate/:username',
         access: 'GET|POST|DELETE /api/access/:username',
         bulk: 'POST /api/access/bulk (OPTIMIZED + PROTECTED)',
         bulkRemove: 'POST /api/access/bulk-remove (PROTECTED)',
         replace: 'POST /api/access/replace (PROTECTED)',
         profileImage: 'GET /profile/:username (PUBLIC)',
-        admin: 'GET /admin (REQUIRES TOKEN)',
         metrics: 'GET /api/metrics/stats (E-COMMERCE)',
         healthCheck: 'GET /api/metrics/health (E-COMMERCE)'
+      },
+      quickLinks: {
+        documentation: 'http://localhost:5001/doc-endpoint',
+        adminPanel: 'http://localhost:5001/admin',
+        examples: 'http://localhost:5001/doc-endpoint#examples'
       }
   });
 });
@@ -121,8 +126,21 @@ app.get('/doc-endpoint', (req, res) => {
         <div class="text-center mb-12">
             <h1 class="text-4xl font-bold text-cyan-400 mb-4">🚀 TradingView Access Management API</h1>
             <p class="text-xl text-gray-300 mb-2">Documentación completa - Optimizada para IAs</p>
-            <div class="text-sm text-gray-400">
+            <div class="text-sm text-gray-400 mb-4">
                 Versión: 2.3.0 | Base URL: <code class="bg-gray-800 px-2 py-1 rounded">http://localhost:5001</code>
+            </div>
+
+            <!-- Quick Access Buttons -->
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <a href="/" class="inline-flex items-center px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    🏠 Página Principal
+                </a>
+                <a href="/admin" class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    🎛️ Panel Admin
+                </a>
+                <a href="#examples" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    💡 Ejemplos
+                </a>
             </div>
         </div>
 
