@@ -1,22 +1,83 @@
 /**
  * 🔗 Bulk Operations Integration Tests
  *
- * End-to-end testing of bulk operations with real API calls
- * These tests are slower but provide confidence in real-world scenarios
+ * End-to-end testing of bulk operations with mocked API calls
+ * These tests simulate real-world scenarios without external dependencies
  */
 
 const request = require('supertest');
+const axios = require('axios');
 const app = require('../../src/server');
+
+// Mock TradingView API responses for testing
+jest.mock('axios');
 
 describe('🔗 Bulk Operations Integration', () => {
   // Increase timeout for integration tests
   jest.setTimeout(60000); // 60 seconds
 
+  beforeEach(() => {
+    // Reset all mocks before each test
+    jest.clearAllMocks();
+
+    // Mock TradingView API responses for successful operations
+    axios.get.mockImplementation((url) => {
+      if (url.includes('username_hint')) {
+        // Mock user validation - return valid user
+        return Promise.resolve({
+          status: 200,
+          data: [{ username: 'apidevs' }]
+        });
+      }
+      if (url.includes('tvcoins/details')) {
+        // Mock cookie validation - return success
+        return Promise.resolve({
+          status: 200,
+          data: { balance: 25.50 }
+        });
+      }
+      return Promise.reject(new Error(`Unexpected GET request to ${url}`));
+    });
+
+    axios.post.mockImplementation((url, data, config) => {
+      // Mock access checking (getAccessDetails)
+      if (url.includes('list_users')) {
+        return Promise.resolve({
+          status: 200,
+          data: {
+            results: [{
+              username: 'apidevs',
+              expiration: '2024-01-01T00:00:00+00:00' // Has expired access, needs renewal
+            }]
+          }
+        });
+      }
+
+      // Mock access granting (addAccess) - pine_perm/add/
+      if (url.includes('pine_perm/add/')) {
+        return Promise.resolve({
+          status: 200,
+          data: { success: true }
+        });
+      }
+
+      // Mock access modification (modify_user_expiration) - for existing users
+      if (url.includes('pine_perm/modify_user_expiration/')) {
+        return Promise.resolve({
+          status: 200,
+          data: { success: true }
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected POST request to ${url}`));
+    });
+  });
+
   describe('📊 Real Bulk Access Grant', () => {
     test('should successfully grant access to multiple users', async () => {
       const users = ['apidevs']; // Single user for reliable testing
       const pineIds = ['PUB;ebd861d70a9f478bb06fe60c5d8f469c'];
-      const duration = '7D';
+      const accessDuration = '7D'; // Rename to avoid conflict
 
       const startTime = Date.now();
 
@@ -26,7 +87,7 @@ describe('🔗 Bulk Operations Integration', () => {
         .send({
           users,
           pine_ids: pineIds,
-          duration,
+          duration: accessDuration,
           options: {
             batchSize: 1,
             delayMs: 500
@@ -38,18 +99,20 @@ describe('🔗 Bulk Operations Integration', () => {
       const operationDuration = endTime - startTime;
 
       // Validate response structure
-      expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('total', users.length * pineIds.length);
       expect(response.body).toHaveProperty('success');
       expect(response.body).toHaveProperty('errors');
       expect(response.body).toHaveProperty('duration');
       expect(response.body).toHaveProperty('successRate');
+      expect(response.body).toHaveProperty('results');
+      expect(Array.isArray(response.body.results)).toBe(true);
+      expect(response.body.success).toBeGreaterThanOrEqual(1); // At least 1 success
 
       // Performance assertions
-      expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
+      expect(operationDuration).toBeLessThan(10000); // Should complete within 10 seconds
       expect(response.body.successRate).toBeGreaterThanOrEqual(80); // At least 80% success rate
 
-      console.log(`📊 Bulk operation completed in ${duration}ms with ${response.body.successRate}% success rate`);
+      console.log(`📊 Bulk operation completed in ${operationDuration}ms with ${response.body.successRate}% success rate`);
     });
 
     test('should handle invalid parameters gracefully', async () => {
