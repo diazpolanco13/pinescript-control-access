@@ -1248,7 +1248,7 @@
 
         // BULK OPERATION TEST
         async function testBulkOperation() {
-            const usersInput = prompt('Ingresa usernames separados por coma:', 'user1,user2,apidevs');
+            const usersInput = prompt('Ingresa usernames separados por coma:', 'testuser1,testuser2,apidevs');
             if (!usersInput) throw new Error('Lista de usuarios requerida');
 
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
@@ -1343,22 +1343,37 @@
         }
 
         async function testAccessEndpoint() {
-            addLog('❌ ENDPOINT ACCESS TEMPORALMENTE NO DISPONIBLE', 'warning');
-            addLog('El endpoint GET /api/access/:username requiere pine_ids en body', 'info');
-            addLog('Pero GET requests no pueden tener body según HTTP standard', 'info');
-            addLog('💡 Usa los scripts de terminal para probar este endpoint', 'info');
-            
+            const username = prompt('Ingresa un username para consultar acceso:', 'apidevs');
+            if (!username) throw new Error('Username requerido');
+
+            const pineIds = prompt('Pine IDs (separados por coma):', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
+            if (!pineIds) throw new Error('Pine IDs requeridos');
+
+            const pineIdsArray = pineIds.split(',').map(id => id.trim());
+
+            const startTime = Date.now();
+            // Usar GET con query parameters (arreglado en backend)
+            const queryParams = new URLSearchParams({
+                pine_ids: JSON.stringify(pineIdsArray)
+            });
+
+            const response = await fetch(`/api/access/${username}?${queryParams}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const endTime = Date.now();
+            const data = await response.json();
+
             return {
                 endpoint: 'GET /api/access/:username',
-                status: 'SKIPPED',
-                message: 'Endpoint requiere refactoring para usar query params',
-                recommendation: 'Usar scripts de terminal: npm run smart-test',
-                execution_time: '0ms',
-                success: false,
-                response: {
-                    note: 'Este endpoint funciona correctamente desde scripts de terminal',
-                    issue: 'GET requests no pueden tener body en navegadores'
-                }
+                username: username,
+                pine_ids: pineIdsArray,
+                execution_time: `${endTime - startTime}ms`,
+                status: response.status,
+                success: response.ok,
+                response: data
             };
         }
 
@@ -1421,11 +1436,11 @@
         }
 
         async function testBulkEndpoint() {
-            const usersInput = prompt('Ingresa usernames separados por coma:', 'user1,user2,apidevs');
+            const usersInput = prompt('Ingresa usernames separados por coma:', 'testuser1,testuser2,apidevs');
             if (!usersInput) throw new Error('Lista de usuarios requerida');
 
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
-            
+
             const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
             if (!pineId) throw new Error('Pine ID requerido');
 
@@ -1435,7 +1450,10 @@
             const startTime = Date.now();
             const response = await fetch('/api/access/bulk', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your_ultra_secure_api_key_2025'
+                },
                 body: JSON.stringify({
                     users: users,
                     pine_ids: [pineId],
@@ -1445,7 +1463,7 @@
             });
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'POST /api/access/bulk',
                 users: users,
@@ -1459,18 +1477,21 @@
         }
 
         async function testBulkRemoveEndpoint() {
-            const usersInput = prompt('Ingresa usernames para remover (separados por coma):', 'user1,user2');
+            const usersInput = prompt('Ingresa usernames para remover (separados por coma):', 'testuser1,testuser2');
             if (!usersInput) throw new Error('Lista de usuarios requerida');
 
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
-            
+
             const pineId = prompt('Pine ID a remover:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
             if (!pineId) throw new Error('Pine ID requerido');
 
             const startTime = Date.now();
             const response = await fetch('/api/access/bulk-remove', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your_ultra_secure_api_key_2025'
+                },
                 body: JSON.stringify({
                     users: users,
                     pine_ids: [pineId],
@@ -1479,7 +1500,7 @@
             });
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'POST /api/access/bulk-remove',
                 users: users,
@@ -1492,11 +1513,11 @@
         }
 
         async function testReplaceEndpoint() {
-            const usersInput = prompt('Ingresa usernames para reemplazar (separados por coma):', 'user1,user2');
+            const usersInput = prompt('Ingresa usernames para reemplazar (separados por coma):', 'testuser1,testuser2');
             if (!usersInput) throw new Error('Lista de usuarios requerida');
 
             const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
-            
+
             const pineId = prompt('Pine ID:', 'PUB;ebd861d70a9f478bb06fe60c5d8f469c');
             if (!pineId) throw new Error('Pine ID requerido');
 
@@ -1506,7 +1527,10 @@
             const startTime = Date.now();
             const response = await fetch('/api/access/replace', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your_ultra_secure_api_key_2025'
+                },
                 body: JSON.stringify({
                     users: users,
                     pine_ids: [pineId],
@@ -1516,7 +1540,7 @@
             });
             const endTime = Date.now();
             const data = await response.json();
-            
+
             return {
                 endpoint: 'POST /api/access/replace',
                 users: users,

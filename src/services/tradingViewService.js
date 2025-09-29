@@ -882,4 +882,6 @@ class TradingViewService {
 }
 
 // Export class for instantiation
-module.exports = TradingViewService;
+// Export singleton instance
+const service = new TradingViewService();
+module.exports = service;

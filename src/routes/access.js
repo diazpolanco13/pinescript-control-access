@@ -402,11 +402,22 @@ router.post('/bulk', apiAuth, bulkLimiter, async (req, res) => {
 router.get('/:username', tradingViewLimiter, async (req, res) => {
   try {
     const { username } = req.params;
-    const { pine_ids } = req.body;
+    // Accept pine_ids from query parameters instead of body (GET requests can't have body)
+    let pine_ids;
+
+    if (req.query.pine_ids) {
+      try {
+        pine_ids = JSON.parse(req.query.pine_ids);
+      } catch (error) {
+        return res.status(400).json({
+          error: 'Invalid pine_ids format in query parameter'
+        });
+      }
+    }
 
     if (!pine_ids || !Array.isArray(pine_ids)) {
       return res.status(400).json({
-        error: 'pine_ids array is required in request body'
+        error: 'pine_ids array is required as query parameter (JSON string)'
       });
     }
 
