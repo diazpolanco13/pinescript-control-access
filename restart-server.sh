@@ -13,9 +13,9 @@ if [ ! -z "$PIDS" ]; then
     sleep 2
 fi
 
-# Detener todos los procesos de Node.js por si acaso
-echo "Deteniendo procesos de Node.js..."
-pkill -f "node" 2>/dev/null
+# Detener específicamente el servidor TradingView (más específico)
+echo "Deteniendo servidor TradingView..."
+pkill -f "src/server.js" 2>/dev/null
 sleep 1
 
 echo "🚀 Iniciando servidor..."
