@@ -1,4 +1,4 @@
-# 🚀 TradingView Access Management - Node.js Edition
+# 🚀 TradingView Access Management - Node.js API
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.18+-blue.svg)](https://expressjs.com/)
@@ -6,7 +6,7 @@
 
 **API RESTful ultrarrápida para gestión masiva de acceso a scripts de TradingView**
 
-> **Versión 2.0** - Optimizada para operaciones masivas con paralelización y rate limiting inteligente
+> **Versión 2.2** - Autenticación por cookies, panel de administración y optimización completa
 
 ## ⚡ Características Principales
 
@@ -20,10 +20,10 @@
 - 🔒 **Seguridad**: Autenticación automática con TradingView
 - 🎯 **API RESTful**: Endpoints intuitivos y bien documentados
 - 🏗️ **Alta Disponibilidad**: Reinicio automático de workers caídos
-- 🎨 **Dashboard Web**: Interfaz React + Tailwind para administración
-- ⚙️ **Configuración Visual**: Setup TradingView via interfaz web
-- 📊 **Monitoreo Tiempo Real**: Estado de conexión y métricas live
-- 🧪 **Validación Interactiva**: Pruebas de usuarios desde el dashboard
+- 🎛️ **Panel de Administración Web**: Gestión de cookies y configuración
+- 🔐 **Autenticación Segura**: Token-based para operaciones administrativas
+- 📊 **Monitoreo de Sistema**: Estado de cookies y perfil TradingView
+- 🧪 **Gestión de Sesión**: Actualización manual de cookies de sesión
 
 ## 📊 Rendimiento Probado (Usuarios Reales)
 
@@ -68,13 +68,13 @@
 ## 🏗️ Arquitectura
 
 ```
-TradingView Access Management (Node.js + React)
+TradingView Access Management (Node.js API)
 ├── src/                       # Backend API
 │   ├── server.js              # Servidor Express principal
 │   ├── routes/                # Endpoints REST
 │   │   ├── validate.js        # Validación de usuarios
 │   │   ├── access.js          # Gestión de accesos
-│   │   ├── config.js          # Configuración TradingView (NUEVO)
+│   │   ├── config.js          # Configuración TradingView
 │   │   └── metrics.js         # Métricas para e-commerce
 │   ├── services/
 │   │   ├── tradingViewService.js # Lógica core TradingView
@@ -84,21 +84,13 @@ TradingView Access Management (Node.js + React)
 │   ├── utils/                 # Utilidades
 │   │   ├── logger.js          # Sistema de logging
 │   │   ├── dateHelper.js      # Manejo de fechas
-│   │   └── sessionStorage.js  # Persistencia de sesiones
+│   │   ├── cookieManager.js   # Gestión de cookies TradingView
+│   │   └── adminAuth.js       # Autenticación admin
 │   └── middleware/
 │       ├── rateLimit.js       # Control de rate limiting
 │       └── apiAuth.js         # Autenticación API key
-├── dashboard/                 # Frontend React (NUEVO)
-│   ├── src/
-│   │   ├── App.jsx            # Componente principal
-│   │   ├── components/
-│   │   │   └── TradingViewConnection.jsx # Configuración TradingView
-│   │   ├── services/
-│   │   │   └── api.js         # Cliente API
-│   │   └── hooks/
-│   │       └── useApi.js      # Custom hooks para API
-│   ├── tailwind.config.js     # Configuración Tailwind v4
-│   └── vite.config.js         # Configuración Vite
+├── public/                    # Assets estáticos
+│   └── admin.html             # Panel de administración web
 ├── config/                    # Configuración
 ├── scripts/                   # Scripts de testing
 └── tests/                     # Tests automatizados
@@ -134,47 +126,33 @@ NODE_ENV=development
 ### 3. Ejecutar
 
 ```bash
-# 🎨 FULL STACK - Dashboard + API (RECOMENDADO)
-npm run dev:full
-
-# Desarrollo backend solo
+# 🚀 DESARROLLO
 npm run dev
 
-# Desarrollo dashboard solo
-npm run dev:dashboard
-
-# Build dashboard para producción
-npm run build:dashboard
-
-# 🆕 CLUSTERING MULTI-CORE (PRODUCCIÓN)
-# Desarrollo con clustering
-npm run dev:cluster
-
-# Producción con clustering (auto-escala según CPU)
+# 🏆 PRODUCCIÓN CON CLUSTERING (RECOMENDADO)
 npm run start:cluster
 
-# Producción con PM2 (gestión avanzada)
+# 🏆 PRODUCCIÓN CON PM2 (GESTIÓN AVANZADA)
 npm run pm2:start
 
-# Tests
+# 🧪 TESTS
 npm test
 
-# Benchmark: Comparación single vs clustering
+# 📊 BENCHMARKS DE RENDIMIENTO
 node scripts/benchmark-cluster.js
+node scripts/test-runner.js cluster
 
-# Prueba de rendimiento masivo
-npm run test:bulk
+# 🔄 GESTIÓN DEL SERVIDOR
+.\restart-server.ps1  # Windows PowerShell
 ```
 
 #### 🎯 **Modos de Ejecución Recomendados:**
 
 | Modo | Comando | Uso | Ventajas |
 |------|---------|-----|----------|
-| **🎨 Full Stack Dev** | `npm run dev:full` | Desarrollo completo | Dashboard + API |
-| **Desarrollo Backend** | `npm run dev` | Solo API | Hot reload |
-| **Desarrollo Frontend** | `npm run dev:dashboard` | Solo Dashboard | Interfaz web |
+| **🚀 Desarrollo** | `npm run dev` | Desarrollo con hot reload | Debugging fácil |
 | **🏆 Producción Clustering** | `npm run start:cluster` | Alto rendimiento | 2-6x más rápido |
-| **🏆 Producción PM2** | `npm run pm2:start` | Enterprise | Gestión completa |
+| **🏆 Producción PM2** | `npm run pm2:start` | Gestión enterprise | Monitoreo avanzado |
 
 ## 📡 API Endpoints
 
@@ -704,7 +682,7 @@ curl -X POST "http://localhost:5001/api/access/replace" \
   }'
 ```
 
-### ⚙️ **Configuración TradingView (⭐ NUEVO - Dashboard Web)**
+### ⚙️ **Configuración TradingView (⭐ Cookie Authentication)**
 ```bash
 # Probar credenciales TradingView
 curl -X POST "http://localhost:5001/api/config/tradingview" \
@@ -779,62 +757,41 @@ npm run smart-test
 npm run test:bulk
 ```
 
-## 🎨 Dashboard Web (Frontend React)
+## 🎛️ Panel de Administración Web
 
-### 🚀 Acceso al Dashboard
+### 🚀 Acceso al Panel de Administración
 ```bash
-# Después de ejecutar npm run dev:full:
-# Frontend: http://localhost:5173
-# Backend:  http://localhost:5001
+# Después de iniciar el servidor:
+npm start
+
+# Panel de administración: http://localhost:5001/admin
+# Token de admin se muestra en la consola del servidor
 ```
 
-### ✨ Características del Dashboard
+### ✨ Características del Panel
 
-#### 📊 **Estado de Conexión API**
-- Verificación automática cada 30 segundos
-- Indicadores visuales (✅/❌/⏳) 
-- Información de versión y endpoints disponibles
-- Botón manual "🔄 Verificar Conexión"
+#### 🔐 **Autenticación de Administrador**
+- Token único generado por sesión
+- Interfaz simple de login
+- Acceso protegido a funciones administrativas
 
-#### 🔐 **Configuración TradingView**
-- Formulario seguro para credenciales
-- Toggle para mostrar/ocultar contraseña
-- Prueba de conexión en tiempo real
-- Guardado automático en .env
-- Validación real contra TradingView API
+#### 🍪 **Gestión de Cookies TradingView**
+- Verificación automática de validez de cookies
+- Actualización manual de `sessionid` y `sessionid_sign`
+- Limpieza de cookies almacenadas
+- Información detallada del perfil (usuario, balance, partner status)
 
-#### 📈 **Métricas del Sistema**
-- Requests hoy, usuarios activos, uptime
-- Actualización automática cada 60 segundos
-- Loading states con animaciones
+#### 📊 **Estado del Sistema**
+- Estado de autenticación con TradingView
+- Información del perfil de usuario
+- Fecha de última verificación
+- Imagen de perfil del administrador
 
-#### 🧪 **Validación Interactiva** 
-- Campo de texto para probar usuarios
-- Validación real contra TradingView
-- Respuestas diferenciadas (válido/inválido)
-- Indicadores visuales de estado
-
-### 🎨 Stack Tecnológico Frontend
-- **React 18** + **Vite 7** (desarrollo súper rápido)
-- **Tailwind CSS v4** (plugin nativo de Vite)
+### 🎨 Stack Tecnológico
+- **HTML5** + **CSS3** + **Vanilla JavaScript**
 - **Axios** para comunicación con API
-- **Custom Hooks** para manejo de estado
 - **Responsive Design** mobile-first
-
-### 🛠️ Scripts de Desarrollo
-```bash
-# Full stack (frontend + backend)
-npm run dev:full
-
-# Solo frontend  
-npm run dev:dashboard
-
-# Solo backend
-npm run dev
-
-# Build para producción
-npm run build:dashboard
-```
+- **Interfaz intuitiva** sin dependencias externas
 
 ### 🔧 Testing con Postman/Insomnia
 
@@ -981,7 +938,7 @@ pm2 startup
 
 #### 🏪 **E-commerce Integration**
 - ✅ **Promociones masivas**: Black Friday, ofertas especiales
-- ✅ **Integración API**: Node.js/React, webhooks de pago
+- ✅ **Integración API**: Node.js, webhooks de pago
 - ✅ **Gestión de inventario**: Control de licencias disponibles
 
 ### ⚠️ **Limitaciones Importantes de TradingView**
@@ -1026,15 +983,15 @@ POST /api/access/bulk
 
 ## 📝 Changelog
 
-### v2.2.0 - Dashboard Edition (2025-09-26)
-- ✅ **Dashboard Web Completo**: React 18 + Tailwind CSS v4
-- ✅ **Configuración Visual TradingView**: Setup vía interfaz web
-- ✅ **Monitoreo Tiempo Real**: Estado API, métricas, conexión
-- ✅ **Validación Interactiva**: Pruebas de usuarios desde dashboard
-- ✅ **Nuevos Endpoints**: `/api/config/tradingview` + `/status`
-- ✅ **Full Stack Development**: `npm run dev:full` 
-- ✅ **Arquitectura Moderna**: Frontend + Backend integrados
-- ✅ **UX Profesional**: Responsive, loading states, indicadores visuales
+### v2.2.0 - Cookie Authentication Edition (2025-09-29)
+- ✅ **Autenticación por Cookies**: Sistema completo para evitar CAPTCHA
+- ✅ **Panel de Administración HTML**: Interfaz simple sin frameworks
+- ✅ **Gestión de Sesión TradingView**: Cookies persistentes y validación
+- ✅ **Endpoint Público de Perfil**: Scraping de imágenes de usuario
+- ✅ **Nuevos Endpoints Admin**: `/admin/cookies/*` para gestión completa
+- ✅ **Limpieza de Scripts**: Eliminación de duplicados, test-runner unificado
+- ✅ **Arquitectura Simplificada**: API pura Node.js sin frontend complejo
+- ✅ **Seguridad Mejorada**: Token-based auth + permisos de archivos
 
 ### v2.1.0 - Optimized Edition (2025-09-26)
 - ✅ **Optimización completa** del Request Batcher (4x más rápido)
