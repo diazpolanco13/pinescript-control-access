@@ -280,7 +280,7 @@ Obtener imagen de perfil de usuario de TradingView.
 **Ejemplos:**
 ```bash
 curl "http://localhost:5001/profile/apidevelopers"
-curl "http://localhost:5001/profile/trendoscope"
+curl "http://localhost:5001/profile/apidevs"
 ```
 
 **Respuesta de Éxito (200):**
@@ -556,7 +556,7 @@ curl -s "http://localhost:5001/api/validate/apidevelopers" | jq
 curl -s "http://localhost:5001/profile/apidevelopers" | jq
 
 # Ejemplos con diferentes usuarios
-curl -s "http://localhost:5001/profile/trendoscope" | jq
+curl -s "http://localhost:5001/profile/apidevs" | jq
 curl -s "http://localhost:5001/profile/nonexistentuser" | jq
 ```
 
