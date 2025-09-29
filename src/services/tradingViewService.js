@@ -210,6 +210,50 @@ class TradingViewService {
   }
 
   /**
+   * Validate cookies using Pine Script API (fallback when /tvcoins/details/ fails)
+   * This method uses a read-only Pine Script endpoint to verify authentication
+   */
+  async validateCookiesWithPineAPI() {
+    if (!this.sessionId || !this.sessionIdSign) {
+      return { valid: false };
+    }
+
+    try {
+      // Usar el endpoint de listado de usuarios que es de solo lectura
+      // Esto debería funcionar si las cookies son válidas para Pine Script operations
+      const response = await axios.get(urls.list_users, {
+        params: { limit: 1 }, // Solo pedimos 1 usuario para minimizar carga
+        headers: {
+          'origin': 'https://www.tradingview.com',
+          'cookie': `sessionid=${this.sessionId}; sessionid_sign=${this.sessionIdSign}`
+        },
+        timeout: 10000
+      });
+
+      if (response.status === 200) {
+        const data = response.data;
+        // Si la respuesta es exitosa, las cookies son válidas
+        // Intentar extraer username si está disponible
+        let username = null;
+        if (data && Array.isArray(data) && data.length > 0 && data[0].username) {
+          username = data[0].username;
+        }
+
+        authLogger.debug('Cookie validation successful via Pine API');
+        return {
+          valid: true,
+          username: username,
+          method: 'pine_api'
+        };
+      }
+    } catch (error) {
+      authLogger.debug({ error: error.message }, 'Cookie validation failed via Pine API');
+    }
+
+    return { valid: false };
+  }
+
+  /**
    * Validate username
    */
   async validateUsername(username) {

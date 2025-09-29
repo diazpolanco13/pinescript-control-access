@@ -75,7 +75,32 @@ router.get('/cookies/status', requireAdminToken, async (req, res) => {
     if (isAuthenticated) {
       // Intentar obtener datos del perfil (similar al sistema Python)
       profileData = await tradingViewService.getProfileData();
-      if (profileData) {
+
+      // Si getProfileData() falla, intentar validación alternativa con Pine Script API
+      if (!profileData) {
+        apiLogger.debug('Profile data unavailable, trying alternative validation');
+        try {
+          // Intentar una operación de solo lectura para validar cookies
+          const validationResult = await tradingViewService.validateCookiesWithPineAPI();
+          if (validationResult && validationResult.valid) {
+            // Cookies son válidas, crear profileData básico
+            profileData = {
+              balance: 'N/A (validado con Pine API)',
+              username: validationResult.username || 'unknown',
+              partner_status: 'N/A',
+              affiliate_id: 'N/A',
+              currency: 'USD',
+              partner_type: 'N/A',
+              last_verified: new Date().toISOString(),
+              validation_method: 'pine_api_fallback'
+            };
+            username = profileData.username;
+            apiLogger.info('Cookie validation successful using Pine API fallback');
+          }
+        } catch (fallbackError) {
+          apiLogger.debug({ error: fallbackError.message }, 'Pine API validation also failed');
+        }
+      } else {
         username = profileData.username;
       }
     }
