@@ -22,10 +22,14 @@
     "pm2:stop": "pm2 stop tradingview-api",
     "pm2:restart": "pm2 restart tradingview-api",
     "pm2:delete": "pm2 delete tradingview-api",
-    "quick-benchmark": "node scripts/quick-benchmark.js",
     "smart-test": "node scripts/smart-bulk-test.js",
     "controlled-test": "node scripts/controlled-test.js",
-    "status": "node scripts/status-check.js"
+    "status": "node scripts/status-check.js",
+    "test:10": "node scripts/test-10-users.js",
+    "calibrate": "node scripts/calibration-test.js",
+    "test:adaptive": "node scripts/test-remove-grant.js",
+    "apply:adaptive": "node scripts/apply-adaptive-config.js",
+    "diagnose": "node scripts/diagnose-issue.js"
   },
   "keywords": [
     "tradingview",

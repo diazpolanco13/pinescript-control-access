@@ -131,9 +131,12 @@ async function showSystemStatus() {
 
     // Scripts Available
     console.log('🛠️  SCRIPTS DISPONIBLES:');
-    console.log('   • npm run quick-benchmark    → Prueba rendimiento básico');
-    console.log('   • npm run smart-test         → Prueba sistema completo');
-    console.log('   • npm run controlled-test    → Prueba pequeña controlada');
+    console.log('   • npm run test:10            → Test con 10 usuarios reales');
+    console.log('   • npm run test:adaptive      → Test completo remove+grant');
+    console.log('   • npm run smart-test         → Prueba sistema completo (15 usuarios)');
+    console.log('   • npm run controlled-test    → Prueba pequeña controlada (5 usuarios)');
+    console.log('   • npm run calibrate          → Calibración científica de límites');
+    console.log('   • npm run diagnose           → Diagnosticar problemas');
     console.log('   • npm run status             → Este reporte');
     console.log('   • npm run test:bulk          → Test con todos los usuarios');
     console.log('');

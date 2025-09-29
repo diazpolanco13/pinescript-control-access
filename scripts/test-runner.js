@@ -34,13 +34,17 @@ const TEST_TYPES = {
         script: 'benchmark-cluster.js',
         description: 'Clustering performance benchmark'
     },
-    'http2': {
-        script: 'benchmark-http2.js',
-        description: 'Advanced HTTP/2 performance testing'
+    'calibrate': {
+        script: 'calibration-test.js',
+        description: 'Scientific calibration of TradingView limits'
     },
-    'http2-simple': {
-        script: 'benchmark-http2-simple.js',
-        description: 'Simple HTTP/2 latency testing'
+    'diagnose': {
+        script: 'diagnose-issue.js',
+        description: 'Diagnose grant access issues'
+    },
+    'adaptive': {
+        script: 'test-remove-grant.js',
+        description: 'Complete remove+grant cycle test'
     }
 };
 

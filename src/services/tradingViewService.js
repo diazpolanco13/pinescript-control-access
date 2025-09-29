@@ -16,6 +16,7 @@ const { getAccessExtension, parseDuration, getCurrentUTCDate } = require('../uti
 const { authLogger, apiLogger, bulkLogger } = require('../utils/logger');
 const RequestBatcher = require('../utils/requestBatcher');
 const CookieManager = require('../utils/cookieManager');
+const adaptiveConfig = require('../utils/adaptiveConfig');
 
 /**
  * 🚀 HTTP/1.1 Connection Pooling Configuration (Optimized)
@@ -81,21 +82,54 @@ class TradingViewService {
     this.cookieManager = new CookieManager();
 
     // Initialize intelligent request batcher (OPTIMIZED for performance)
-    this.requestBatcher = new RequestBatcher({
-      maxConcurrent: 4,    // OPTIMIZADO: 4 requests in parallel
-      batchSize: 8,        // OPTIMIZADO: 8 requests per batch
-      minDelay: 300,       // OPTIMIZADO: 300ms between batches (balanceado)
-      maxDelay: 15000,     // REDUCIDO: Max 15s delay for backoff
-      backoffMultiplier: 1.5, // Menos agresivo backoff
-      circuitBreakerThreshold: 3, // BALANCEADO: Open circuit after 3 failures
-      circuitBreakerTimeout: 30000 // REDUCIDO: 30s circuit open
-    });
+    // Initialize with default 'mixed' configuration
+    this.initBatcher('mixed');
   }
 
   /**
    * Initialize service - load and validate cookies
    * Basado en el sistema Python funcional que evita CAPTCHA
    */
+
+  /**
+   * Initialize adaptive request batcher based on operation type
+   * @param {string} operation - 'validate', 'grant', 'remove', or 'mixed'
+   */
+  initBatcher(operation = 'mixed') {
+    // Check if adaptiveConfig exists, otherwise use default values
+    if (!adaptiveConfig || !adaptiveConfig.operations) {
+      // Fallback to optimized defaults if adaptiveConfig is not available
+      this.requestBatcher = new RequestBatcher({
+        maxConcurrent: 29,
+        batchSize: 58,
+        minDelay: 50,
+        maxDelay: 3000,
+        backoffMultiplier: 2,
+        circuitBreakerThreshold: 3,
+        circuitBreakerTimeout: 30000
+      });
+      return;
+    }
+    
+    const config = adaptiveConfig.operations[operation] || adaptiveConfig.operations.mixed;
+    
+    this.requestBatcher = new RequestBatcher({
+      maxConcurrent: config.maxConcurrent,
+      batchSize: config.batchSize,
+      minDelay: config.minDelay,
+      maxDelay: config.minDelay * 10, // 10x min for backoff
+      backoffMultiplier: 1.5,
+      circuitBreakerThreshold: 3,
+      circuitBreakerTimeout: 30000
+    });
+    
+    apiLogger.info(`🎯 Adaptive batcher initialized for ${operation} operations`, {
+      maxConcurrent: config.maxConcurrent,
+      batchSize: config.batchSize,
+      minDelay: config.minDelay
+    });
+  }
+
   async init() {
     if (this.initialized) return;
 
@@ -474,6 +508,27 @@ class TradingViewService {
    * Pre-validate users before bulk operations
    */
   async validateUsersBatch(users, options = {}) {
+    // UNIFIED MODE for validation (most permissive - no rate limits observed)
+    const userCount = users.length;
+    
+    // Very aggressive config for validation (TradingView allows it)
+    let config;
+    if (userCount <= 10) {
+      config = { maxConcurrent: userCount, minDelay: 0, batchSize: userCount };
+    } else {
+      config = { maxConcurrent: 20, minDelay: 0, batchSize: 30 };
+    }
+    
+    // No need for full batcher for validation, but keeping for consistency
+    this.requestBatcher = new RequestBatcher({
+      maxConcurrent: config.maxConcurrent,
+      batchSize: config.batchSize,
+      minDelay: config.minDelay,
+      maxDelay: 1000,
+      backoffMultiplier: 1.2,
+      circuitBreakerThreshold: 10,
+      circuitBreakerTimeout: 10000
+    });
     const { maxConcurrent = 8 } = options; // OPTIMIZADO: Más concurrencia
     const results = new Map();
 
@@ -524,34 +579,89 @@ class TradingViewService {
     };
   }
 
+  /**
+   * Handle 429 rate limit errors with smart backoff
+   */
+  async handle429Error(operation, retryCount = 0) {
+    const backoffConfig = adaptiveConfig.adaptive.rateLimitBackoff;
+    const baseDelay = this.requestBatcher.minDelay;
+    const delay = baseDelay * Math.pow(backoffConfig.delayMultiplier, retryCount);
+    
+    bulkLogger.warn(`⚠️ Rate limit hit for ${operation}, backing off ${delay}ms`, {
+      operation,
+      retryCount,
+      delay
+    });
+    
+    // Temporarily reduce concurrency
+    const originalConcurrent = this.requestBatcher.maxConcurrent;
+    this.requestBatcher.maxConcurrent = Math.max(1, Math.floor(originalConcurrent / backoffConfig.concurrencyDivisor));
+    
+    // Wait with exponential backoff
+    await new Promise(resolve => setTimeout(resolve, Math.min(delay, backoffConfig.cooldownPeriod)));
+    
+    // Restore concurrency gradually
+    setTimeout(() => {
+      this.requestBatcher.maxConcurrent = originalConcurrent;
+      bulkLogger.info('✅ Restored original concurrency after cooldown');
+    }, backoffConfig.cooldownPeriod);
+  }
+
+
   async bulkGrantAccess(users, pineIds, duration, options = {}) {
     const {
       onProgress = null,
-      preValidateUsers = false, // OPTIMIZADO: Default false para mejor rendimiento
-      batchSize = 5,
-      delayMs = 200,
-      maxConcurrent = 3
+      preValidateUsers = false
     } = options;
 
     await this.init();
 
-    // FAST MODE: For small operations (≤5 users), skip complex batching
-    const isSmallOperation = users.length <= 5 && pineIds.length <= 3;
-    if (isSmallOperation) {
-      bulkLogger.info('⚡ Using FAST mode for small operation', {
-        users: users.length,
-        pineIds: pineIds.length,
-        totalOps: users.length * pineIds.length
-      });
+    // UNIFIED INTELLIGENT MODE - One mode that adapts to any size
+    const userCount = users.length;
+    const totalOps = users.length * pineIds.length;
+    
+    // Intelligent configuration based on operation size
+    let config;
+    let modeName;
+    
+    if (userCount <= 3) {
+      config = { maxConcurrent: userCount, minDelay: 0, batchSize: userCount };
+      modeName = 'ULTRA_FAST';
+    } else if (userCount <= 10) {
+      config = { maxConcurrent: 5, minDelay: 100, batchSize: 5 };
+      modeName = 'FAST';
+    } else if (userCount <= 50) {
+      config = { maxConcurrent: 5, minDelay: 200, batchSize: 10 };
+      modeName = 'BALANCED';
+    } else {
+      config = { maxConcurrent: 3, minDelay: 300, batchSize: 15 };
+      modeName = 'CONSERVATIVE';
+    }
+    
+    // Apply adaptive configuration
+    this.requestBatcher = new RequestBatcher({
+      maxConcurrent: config.maxConcurrent,
+      batchSize: config.batchSize,
+      minDelay: config.minDelay,
+      maxDelay: config.minDelay * 10,
+      backoffMultiplier: 1.5,
+      circuitBreakerThreshold: 3,
+      circuitBreakerTimeout: 30000
+    });
+    
+    bulkLogger.info(`🎯 UNIFIED MODE: ${modeName} for ${userCount} users`, {
+      users: userCount,
+      pineIds: pineIds.length,
+      totalOps: totalOps,
+      config: config
+    });
+
+    // For very small operations (≤3 users), use direct parallel execution
+    if (userCount <= 3) {
       return await this._bulkGrantAccessFast(users, pineIds, duration, options);
     }
-
-    // STANDARD MODE: Use complex batching for large operations
-    bulkLogger.info('🚀 Using STANDARD mode for large operation', {
-      users: users.length,
-      pineIds: pineIds.length,
-      totalOps: users.length * pineIds.length
-    });
+    
+    // For all other operations, use the intelligent batcher
     return await this._bulkGrantAccessStandard(users, pineIds, duration, options);
   }
 
@@ -561,53 +671,45 @@ class TradingViewService {
     const startTime = Date.now();
     const totalOperations = users.length * pineIds.length;
 
-    let processed = 0;
-    let successCount = 0;
-    let errorCount = 0;
-    const results = [];
+    bulkLogger.info('⚡ FAST MODE OPTIMIZED: True parallel processing');
 
-    // Process all combinations directly
+    // Create all operations
+    const operations = [];
     for (const user of users) {
       for (const pineId of pineIds) {
-        try {
-          const result = await this.grantAccess(user, pineId, duration);
-          results.push(result);
-
-          if (result.status === 'Success') {
-            successCount++;
-          } else {
-            errorCount++;
-          }
-
-          processed++;
-          if (onProgress) {
-            onProgress(processed, totalOperations, successCount, errorCount);
-          }
-        } catch (error) {
-          bulkLogger.error({
-            error: error.message,
-            user,
-            pineId,
-            duration
-          }, 'Fast bulk grant access failed for user');
-
-          results.push({
-            pine_id: pineId,
-            username: user,
-            hasAccess: false,
-            noExpiration: false,
-            currentExpiration: null,
-            status: 'Failure',
-            error: error.message
-          });
-          errorCount++;
-          processed++;
-        }
+        operations.push(this.grantAccess(user, pineId, duration));
       }
     }
 
+    // Execute ALL in parallel (no sequential processing!)
+    const results = await Promise.allSettled(operations);
+
+    // Process results
+    let successCount = 0;
+    let errorCount = 0;
+    const processedResults = results.map((result, index) => {
+      const user = users[Math.floor(index / pineIds.length)];
+      const pineId = pineIds[index % pineIds.length];
+      
+      if (result.status === 'fulfilled' && result.value?.status === 'Success') {
+        successCount++;
+        return result.value;
+      } else {
+        errorCount++;
+        return {
+          pine_id: pineId,
+          username: user,
+          hasAccess: false,
+          status: 'Failure',
+          error: result.reason?.message || 'Unknown error'
+        };
+      }
+    });
+
     const executionTime = Date.now() - startTime;
     const successRate = Math.round((successCount / totalOperations) * 100);
+
+    bulkLogger.info(`⚡ FAST MODE completed in ${executionTime}ms (${successRate}% success)`);
 
     return {
       total: totalOperations,
@@ -615,11 +717,16 @@ class TradingViewService {
       errors: errorCount,
       duration: executionTime,
       successRate,
-      results,
+      results: processedResults,
       skippedUsers: [],
       totalUsersAttempted: users.length,
       validUsersProcessed: users.length,
-      batcherStats: { batchesProcessed: 1, avgResponseTime: 0, finalDelay: 0, circuitBreakerActivated: false }
+      batcherStats: { 
+        batchesProcessed: 1, 
+        avgResponseTime: executionTime / totalOperations, 
+        finalDelay: 0, 
+        circuitBreakerActivated: false 
+      }
     };
   }
 
@@ -841,6 +948,30 @@ class TradingViewService {
    * Uses intelligent batching with circuit breaker and retries
    */
   async bulkRemoveAccess(users, pine_ids, options = {}) {
+    // UNIFIED MODE for remove operations
+    const userCount = users.length;
+    
+    // Adaptive config for remove (more permissive than grant)
+    let config;
+    if (userCount <= 5) {
+      config = { maxConcurrent: userCount, minDelay: 0, batchSize: userCount };
+    } else if (userCount <= 20) {
+      config = { maxConcurrent: 10, minDelay: 50, batchSize: 10 };
+    } else {
+      config = { maxConcurrent: 10, minDelay: 100, batchSize: 15 };
+    }
+    
+    this.requestBatcher = new RequestBatcher({
+      maxConcurrent: config.maxConcurrent,
+      batchSize: config.batchSize,
+      minDelay: config.minDelay,
+      maxDelay: config.minDelay * 10,
+      backoffMultiplier: 1.5,
+      circuitBreakerThreshold: 5,
+      circuitBreakerTimeout: 30000
+    });
+    
+    bulkLogger.info(`🎯 UNIFIED REMOVE MODE for ${userCount} users`, config);
     const startTime = Date.now();
     let processed = 0;
     let successCount = 0;
