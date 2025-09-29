@@ -10,6 +10,51 @@
 **WEBHOOKS**: ✅ IMPLEMENTADOS - Notificaciones automáticas
 **RATE LIMITS**: 100 requests/15min (general), 5/min (bulk)
 **PERFORMANCE**: 4.6 ops/seg, 100% success rate típico
+**SERVIDOR PRODUCCIÓN**: http://185.218.124.241:5001
+**API KEY PRODUCCIÓN**: 92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea
+**WEBHOOK SECRET**: b7d4361f5677a6c5ed2c483fe1ff373c30d819201d7b887d
+
+---
+
+## 🌐 **CONEXIÓN A PRODUCCIÓN**
+
+### **🚀 Servidor de Producción**
+```bash
+URL_BASE: http://185.218.124.241:5001
+ESTADO: ✅ ONLINE y funcionando
+CLUSTERING: 2 instancias PM2 activas
+PERFORMANCE: 4.6 ops/segundo
+```
+
+### **🔐 Credenciales de Producción**
+```bash
+API_KEY: 92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea
+WEBHOOK_SECRET: b7d4361f5677a6c5ed2c483fe1ff373c30d819201d7b887d
+```
+
+### **⚙️ Configuración Recomendada para tu .env**
+```env
+# API de TradingView
+REACT_APP_TRADINGVIEW_API_URL=http://185.218.124.241:5001
+REACT_APP_TRADINGVIEW_API_KEY=92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea
+
+# Webhooks (configura tu URL real)
+ECOMMERCE_WEBHOOK_URL=https://tu-ecommerce.com/webhooks/tradingview
+WEBHOOK_SECRET=b7d4361f5677a6c5ed2c483fe1ff373c30d819201d7b887d
+```
+
+### **🧪 Test Rápido de Conexión**
+```bash
+# Verificar API activa
+curl "http://185.218.124.241:5001/"
+
+# Test endpoint público
+curl "http://185.218.124.241:5001/api/validate/apidevs"
+
+# Test con API key
+curl -H "X-API-Key: 92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea" \
+  "http://185.218.124.241:5001/api/metrics/stats"
+```
 
 ---
 
@@ -98,7 +143,7 @@ const headers = {
 ```env
 # En tu .env
 ECOMMERCE_WEBHOOK_URL=https://tu-ecommerce.com/webhooks/tradingview
-WEBHOOK_SECRET=tu_webhook_secret_ultra_secure_2025
+WEBHOOK_SECRET=b7d4361f5677a6c5ed2c483fe1ff373c30d819201d7b887d
 ```
 
 ### **Ejemplo de Webhook Recibido**
@@ -150,8 +195,8 @@ const verifyWebhook = (payload, signature, secret) => {
 // hooks/useTradingViewAccess.js
 import { useState, useCallback } from 'react';
 
-const TRADINGVIEW_API = process.env.REACT_APP_TRADINGVIEW_API_URL;
-const API_KEY = process.env.REACT_APP_TRADINGVIEW_API_KEY;
+const TRADINGVIEW_API = 'http://185.218.124.241:5001';
+const API_KEY = '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea';
 
 export const useTradingViewAccess = () => {
   const [loading, setLoading] = useState(false);
@@ -394,8 +439,8 @@ const axios = require('axios');
 
 class TradingViewService {
   constructor() {
-    this.baseURL = process.env.TRADINGVIEW_API_URL;
-    this.apiKey = process.env.TRADINGVIEW_API_KEY;
+    this.baseURL = 'http://185.218.124.241:5001';
+    this.apiKey = '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea';
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,
@@ -842,12 +887,12 @@ const alerts = [
 
 ```env
 # TradingView API
-REACT_APP_TRADINGVIEW_API_URL=http://localhost:5000
-REACT_APP_TRADINGVIEW_API_KEY=your_ultra_secure_api_key_2025
+REACT_APP_TRADINGVIEW_API_URL=http://185.218.124.241:5001
+REACT_APP_TRADINGVIEW_API_KEY=92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea
 
 # Webhooks (para backend)
-ECOMMERCE_WEBHOOK_URL=https://tu-app.com/webhooks/tradingview
-WEBHOOK_SECRET=tu_webhook_secret_2025
+ECOMMERCE_WEBHOOK_URL=https://tu-ecommerce.com/webhooks/tradingview
+WEBHOOK_SECRET=b7d4361f5677a6c5ed2c483fe1ff373c30d819201d7b887d
 ```
 
 ### **Paso 2: Instalar Dependencias**
@@ -864,8 +909,8 @@ npm install axios crypto
 
 ```javascript
 // services/tradingView.js
-const API_BASE = process.env.REACT_APP_TRADINGVIEW_API_URL;
-const API_KEY = process.env.REACT_APP_TRADINGVIEW_API_KEY;
+const API_BASE = 'http://185.218.124.241:5001';
+const API_KEY = '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea';
 
 export const tradingViewAPI = {
   // Bulk operations
@@ -954,21 +999,21 @@ const testIntegration = async () => {
 ### **🔍 Validar Usuario (Sin autenticación)**
 ```bash
 # Verificar si usuario existe en TradingView
-curl -s "http://localhost:5000/api/validate/apidevs" | jq
+curl -s "http://185.218.124.241:5001/api/validate/apidevs" | jq
 # Respuesta: {"validuser": true, "verifiedUserName": "apidevs"}
 ```
 
 ### **📸 Obtener Imagen de Perfil (Sin autenticación)**
 ```bash
 # Obtener URL de imagen de perfil
-curl -s "http://localhost:5000/profile/apidevs" | jq
+curl -s "http://185.218.124.241:5001/profile/apidevs" | jq
 # Respuesta: {"success": true, "username": "apidevs", "profile_image": "https://...", "source": "public_profile"}
 ```
 
 ### **⚙️ Configurar Credenciales TradingView (Sin autenticación)**
 ```bash
 # Probar credenciales (testOnly: true)
-curl -X POST "http://localhost:5000/api/config/tradingview" \
+curl -X POST "http://185.218.124.241:5001/api/config/tradingview" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "tu_usuario_tradingview",
@@ -977,7 +1022,7 @@ curl -X POST "http://localhost:5000/api/config/tradingview" \
   }'
 
 # Guardar credenciales (testOnly: false)
-curl -X POST "http://localhost:5000/api/config/tradingview" \
+curl -X POST "http://185.218.124.241:5001/api/config/tradingview" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "tu_usuario_tradingview",
@@ -989,7 +1034,7 @@ curl -X POST "http://localhost:5000/api/config/tradingview" \
 ### **📊 Ver Estado de Configuración (Sin autenticación)**
 ```bash
 # Ver estado actual de configuración
-curl -s "http://localhost:5000/api/config/tradingview/status" | jq
+curl -s "http://185.218.124.241:5001/api/config/tradingview/status" | jq
 ```
 
 ---
@@ -998,22 +1043,22 @@ curl -s "http://localhost:5000/api/config/tradingview/status" | jq
 
 **Para que una IA integre fácilmente:**
 
-1. **Usa X-API-Key** en headers para operaciones bulk
-2. **Los webhooks llegan automáticamente** - solo configura URL
+1. **Usa X-API-Key** en headers para operaciones bulk: `92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea`
+2. **Los webhooks llegan automáticamente** - configura: `https://tu-ecommerce.com/webhooks/tradingview`
 3. **Maneja errores 429** con backoff automático
 4. **Monitorea successRate** - debe ser >95%
 5. **Espera webhooks** para confirmaciones de éxito/error
 
 **Endpoints principales a usar:**
-- `POST /api/access/bulk` → Nuevas suscripciones (MÁS USADO)
-- `POST /api/access/replace` → Cambios de plan
-- `POST /api/access/bulk-remove` → Cancelaciones
-- `GET /api/metrics/stats` → Dashboard de métricas
-- `GET /api/metrics/business` → Métricas de negocio
-- `GET /profile/:username` → Imagen de perfil (PÚBLICO)
-- `GET /api/validate/:username` → Validar usuario (PÚBLICO)
-- `POST /api/config/tradingview` → Configurar credenciales
-- `GET /api/config/tradingview/status` → Estado de configuración
+- `POST http://185.218.124.241:5001/api/access/bulk` → Nuevas suscripciones (MÁS USADO)
+- `POST http://185.218.124.241:5001/api/access/replace` → Cambios de plan
+- `POST http://185.218.124.241:5001/api/access/bulk-remove` → Cancelaciones
+- `GET http://185.218.124.241:5001/api/metrics/stats` → Dashboard de métricas
+- `GET http://185.218.124.241:5001/api/metrics/business` → Métricas de negocio
+- `GET http://185.218.124.241:5001/profile/:username` → Imagen de perfil (PÚBLICO)
+- `GET http://185.218.124.241:5001/api/validate/:username` → Validar usuario (PÚBLICO)
+- `POST http://185.218.124.241:5001/api/config/tradingview` → Configurar credenciales
+- `GET http://185.218.124.241:5001/api/config/tradingview/status` → Estado de configuración
 
 **Sistema probado y optimizado para:**
 - ✅ 4.6 operaciones/segundo

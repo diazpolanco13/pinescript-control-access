@@ -92,9 +92,9 @@ app.get('/', (req, res) => {
         healthCheck: 'GET /api/metrics/health (E-COMMERCE)'
       },
       quickLinks: {
-        documentation: 'http://localhost:5001/doc-endpoint',
-        adminPanel: 'http://localhost:5001/admin',
-        examples: 'http://localhost:5001/doc-endpoint#examples'
+        documentation: 'http://185.218.124.241:5001/doc-endpoint',
+        adminPanel: 'http://185.218.124.241:5001/admin',
+        examples: 'http://185.218.124.241:5001/doc-endpoint#examples'
       }
   });
 });
@@ -127,7 +127,7 @@ app.get('/doc-endpoint', (req, res) => {
             <h1 class="text-4xl font-bold text-cyan-400 mb-4">🚀 TradingView Access Management API</h1>
             <p class="text-xl text-gray-300 mb-2">Documentación completa - Optimizada para IAs</p>
             <div class="text-sm text-gray-400 mb-4">
-                Versión: 2.3.0 | Base URL: <code class="bg-gray-800 px-2 py-1 rounded">http://localhost:5001</code>
+                Versión: 2.3.0 | Base URL: <code class="bg-gray-800 px-2 py-1 rounded">http://185.218.124.241:5001</code>
             </div>
 
             <!-- Quick Access Buttons -->
@@ -198,7 +198,7 @@ app.get('/doc-endpoint', (req, res) => {
                 </div>
                 <p class="text-gray-300 mb-4">Endpoint de health check - Información general de la API</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/</code></pre>
                 </div>
                 <div class="text-sm text-gray-400">
                     <strong>Respuesta:</strong> JSON con versión, estado y lista de endpoints disponibles
@@ -213,7 +213,7 @@ app.get('/doc-endpoint', (req, res) => {
                 </div>
                 <p class="text-gray-300 mb-4">Obtener URL de imagen de perfil de usuario de TradingView (sin autenticación)</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/profile/apidevelopers</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/profile/apidevelopers</code></pre>
                 </div>
                 <div class="text-sm text-gray-400">
                     <strong>Parámetros:</strong> username (string) - Nombre de usuario de TradingView<br>
@@ -233,7 +233,7 @@ app.get('/doc-endpoint', (req, res) => {
                 </div>
                 <p class="text-gray-300 mb-4">Verificar si un usuario existe en TradingView</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/api/validate/apidevelopers</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/api/validate/apidevelopers</code></pre>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
@@ -266,7 +266,7 @@ app.get('/doc-endpoint', (req, res) => {
                 </div>
                 <p class="text-gray-300 mb-4">Consultar acceso actual de un usuario a indicadores específicos</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/api/access/apidevs?pine_ids=["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/api/access/apidevs?pine_ids=["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]</code></pre>
                 </div>
                 <div class="text-sm text-gray-400 mb-4">
                     <strong>Query Params:</strong> pine_ids (JSON array string) - IDs de indicadores a consultar
@@ -282,7 +282,7 @@ app.get('/doc-endpoint', (req, res) => {
                 <p class="text-gray-300 mb-4">Conceder acceso temporal a indicadores</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="code-block p-4">
-                        <pre class="text-cyan-400"><code>POST http://localhost:5001/api/access/apidevs
+                        <pre class="text-cyan-400"><code>POST http://185.218.124.241:5001/api/access/apidevs
 Content-Type: application/json
 
 {
@@ -309,7 +309,7 @@ Content-Type: application/json
                 </div>
                 <p class="text-gray-300 mb-4">Remover acceso a indicadores específicos</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>DELETE http://localhost:5001/api/access/apidevs
+                    <pre class="text-cyan-400"><code>DELETE http://185.218.124.241:5001/api/access/apidevs
 Content-Type: application/json
 
 {
@@ -341,9 +341,9 @@ Content-Type: application/json
                 <p class="text-gray-300 mb-4">Conceder acceso masivo con detección automática de modo óptimo</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div class="code-block p-4">
-                        <pre class="text-cyan-400"><code>POST http://localhost:5001/api/access/bulk
+                        <pre class="text-cyan-400"><code>POST http://185.218.124.241:5001/api/access/bulk
 Content-Type: application/json
-X-API-Key: your_ultra_secure_api_key_2025
+X-API-Key: [TU_API_KEY_AQUI]
 
 {
   "users": ["user1", "user2"],
@@ -374,9 +374,9 @@ X-API-Key: your_ultra_secure_api_key_2025
                 </div>
                 <p class="text-gray-300 mb-4">Remover acceso masivo (ideal para suscripciones vencidas)</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>POST http://localhost:5001/api/access/bulk-remove
+                    <pre class="text-cyan-400"><code>POST http://185.218.124.241:5001/api/access/bulk-remove
 Content-Type: application/json
-X-API-Key: your_ultra_secure_api_key_2025
+X-API-Key: [TU_API_KEY_AQUI]
 
 {
   "users": ["user1", "user2"],
@@ -397,9 +397,9 @@ X-API-Key: your_ultra_secure_api_key_2025
                 </div>
                 <p class="text-gray-300 mb-4">Reemplazar acceso completo (cambios de plan automatizados)</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>POST http://localhost:5001/api/access/replace
+                    <pre class="text-cyan-400"><code>POST http://185.218.124.241:5001/api/access/replace
 Content-Type: application/json
-X-API-Key: your_ultra_secure_api_key_2025
+X-API-Key: [TU_API_KEY_AQUI]
 
 {
   "users": ["user1"],
@@ -433,7 +433,7 @@ X-API-Key: your_ultra_secure_api_key_2025
                 </div>
                 <p class="text-gray-300 mb-4">Panel de administración web completo</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/admin</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/admin</code></pre>
                 </div>
                 <div class="text-sm text-gray-400">
                     <strong>Autenticación:</strong> Token de admin (se muestra en consola del servidor al iniciar)
@@ -448,7 +448,7 @@ X-API-Key: your_ultra_secure_api_key_2025
                 </div>
                 <p class="text-gray-300 mb-4">Verificar estado actual de las cookies de TradingView</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/admin/cookies/status
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/admin/cookies/status
 X-Admin-Token: [tu_token_admin]</code></pre>
                 </div>
             </div>
@@ -461,7 +461,7 @@ X-Admin-Token: [tu_token_admin]</code></pre>
                 </div>
                 <p class="text-gray-300 mb-4">Actualizar cookies manualmente</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>POST http://localhost:5001/admin/cookies/update
+                    <pre class="text-cyan-400"><code>POST http://185.218.124.241:5001/admin/cookies/update
 X-Admin-Token: [tu_token_admin]
 Content-Type: application/json
 
@@ -484,7 +484,7 @@ Content-Type: application/json
                 </div>
                 <p class="text-gray-300 mb-4">Estadísticas completas del sistema para e-commerce</p>
                 <div class="code-block p-4 mb-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/api/metrics/stats</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/api/metrics/stats</code></pre>
                 </div>
                 <div class="text-sm text-gray-400">
                     <strong>Respuesta:</strong> JSON con estadísticas de operaciones, rendimiento y estado del sistema
@@ -498,7 +498,7 @@ Content-Type: application/json
                 </div>
                 <p class="text-gray-300 mb-4">Health check avanzado del sistema</p>
                 <div class="code-block p-4">
-                    <pre class="text-cyan-400"><code>GET http://localhost:5001/api/metrics/health</code></pre>
+                    <pre class="text-cyan-400"><code>GET http://185.218.124.241:5001/api/metrics/health</code></pre>
                 </div>
             </div>
         </section>
@@ -532,16 +532,24 @@ Content-Type: application/json
                     <h3 class="text-xl font-semibold text-yellow-300 mb-4">🔑 X-API-Key (Bulk Operations)</h3>
                     <div class="space-y-3 text-sm">
                         <div>
-                            <strong>Valor por defecto:</strong><br>
-                            <code class="bg-gray-700 px-2 py-1 rounded text-xs">your_ultra_secure_api_key_2025</code>
+                            <strong>Valor de producción:</strong><br>
+                            <code class="bg-gray-700 px-2 py-1 rounded text-xs">🔐 API Key generada automáticamente (64 chars)</code>
                         </div>
                         <div>
-                            <strong>¿Dónde cambiarlo?</strong><br>
-                            <span class="text-gray-300">Variable de entorno ECOMMERCE_API_KEY</span>
+                            <strong>¿Dónde configurarlo?</strong><br>
+                            <span class="text-gray-300">Variable de entorno: <code>ECOMMERCE_API_KEY</code></span>
+                        </div>
+                        <div>
+                            <strong>¿Dónde obtenerlo?</strong><br>
+                            <span class="text-gray-300">Generado automáticamente en logs del servidor</span>
                         </div>
                         <div>
                             <strong>¿Cuándo usarlo?</strong><br>
                             <span class="text-gray-300">En todos los endpoints /api/access/bulk*</span>
+                        </div>
+                        <div>
+                            <strong>¿Cómo usarlo?</strong><br>
+                            <code class="bg-gray-700 px-2 py-1 rounded text-xs">X-API-Key: [tu_api_key_aqui]</code>
                         </div>
                     </div>
                 </div>
@@ -597,14 +605,14 @@ Content-Type: application/json
                             <span class="bg-indigo-500 text-white px-2 py-1 rounded text-sm font-bold">3</span>
                             <div>
                                 <strong>Acceder al panel:</strong><br>
-                                <code class="bg-gray-800 px-2 py-1 rounded text-sm">http://localhost:5001/admin</code>
+                                <code class="bg-gray-800 px-2 py-1 rounded text-sm">http://185.218.124.241:5001/admin</code>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
                             <span class="bg-indigo-500 text-white px-2 py-1 rounded text-sm font-bold">4</span>
                             <div>
                                 <strong>Probar endpoints públicos:</strong><br>
-                                <code class="bg-gray-800 px-2 py-1 rounded text-sm">curl "http://localhost:5001/profile/apidevelopers"</code>
+                                <code class="bg-gray-800 px-2 py-1 rounded text-sm">curl "http://185.218.124.241:5001/profile/apidevelopers"</code>
                             </div>
                         </div>
                     </div>
@@ -614,26 +622,26 @@ Content-Type: application/json
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h4 class="text-lg font-semibold text-green-400 mb-3">✅ Validar Usuario</h4>
-                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -s "http://localhost:5001/api/validate/apidevelopers" | jq</code></pre>
+                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -s "http://185.218.124.241:5001/api/validate/apidevelopers" | jq</code></pre>
                     </div>
 
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h4 class="text-lg font-semibold text-blue-400 mb-3">🔑 Consultar Acceso</h4>
-                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl "http://localhost:5001/api/access/apidevs?pine_ids=[\"PUB;xxx\"]"</code></pre>
+                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl "http://185.218.124.241:5001/api/access/apidevs?pine_ids=[\"PUB;xxx\"]"</code></pre>
                     </div>
 
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h4 class="text-lg font-semibold text-orange-400 mb-3">🚀 Bulk Grant (FAST)</h4>
-                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -X POST "http://localhost:5001/api/access/bulk" \\
+                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -X POST "http://185.218.124.241:5001/api/access/bulk" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your_ultra_secure_api_key_2025" \\
+  -H "X-API-Key: [TU_API_KEY_AQUI]" \\
   -d '{"users":["user1","user2"],"pine_ids":["PUB;xxx"],"duration":"7D","options":{"preValidateUsers":false,"onProgress":false}}'</code></pre>
                     </div>
 
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h4 class="text-lg font-semibold text-purple-400 mb-3">🎛️ Verificar Estado Admin</h4>
                         <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -H "X-Admin-Token: [tu_token]" \\
-  "http://localhost:5001/admin/cookies/status"</code></pre>
+  "http://185.218.124.241:5001/admin/cookies/status"</code></pre>
                     </div>
                 </div>
             </div>
