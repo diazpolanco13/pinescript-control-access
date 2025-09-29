@@ -190,6 +190,99 @@ router.post('/cookies/clear', requireAdminToken, async (req, res) => {
   }
 });
 
+/**
+ * GET /profile/:username
+ * Get user profile image URL (public endpoint - no authentication required)
+ * Based on the Python implementation that scrapes public profile pages
+ */
+router.get('/profile/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // Validate username
+    if (!username || typeof username !== 'string' || username.length === 0) {
+      return res.status(400).json({
+        success: false,
+        username: username,
+        message: 'Username is required'
+      });
+    }
+
+    // Public profile endpoint (no cookies needed)
+    const profileUrl = `https://www.tradingview.com/u/${username}`;
+
+    // Headers for public access
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (compatible; TradingView API)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    };
+
+    const response = await axios.get(profileUrl, {
+      headers,
+      timeout: 10000
+    });
+
+    if (response.status === 200) {
+      const htmlContent = response.data;
+
+      // Check if userpic or avatar is present in HTML
+      if (htmlContent.includes('userpic') || htmlContent.includes('avatar')) {
+        // Extract profile image URL using regex (same pattern as Python)
+        const imgPattern = /https:\/\/s3\.tradingview\.com\/userpics\/[^"']*/g;
+        const matches = htmlContent.match(imgPattern);
+
+        if (matches && matches.length > 0) {
+          const profileImageUrl = matches[0];
+
+          return res.json({
+            success: true,
+            username: username,
+            profile_image: profileImageUrl,
+            source: 'public_profile'
+          });
+        }
+      }
+
+      // If no image found
+      return res.status(404).json({
+        success: false,
+        username: username,
+        profile_image: null,
+        message: 'Profile image not found or user does not exist'
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        username: username,
+        profile_image: null,
+        message: 'User not found or profile not accessible'
+      });
+    }
+
+  } catch (error) {
+    // Handle different error types
+    if (error.response) {
+      // HTTP error response
+      if (error.response.status === 404) {
+        return res.status(404).json({
+          success: false,
+          username: req.params.username,
+          profile_image: null,
+          message: 'Profile image not found or user does not exist'
+        });
+      }
+    }
+
+    // Generic error
+    return res.status(500).json({
+      success: false,
+      username: req.params.username,
+      error: 'Failed to fetch profile image',
+      message: error.message
+    });
+  }
+});
+
 module.exports = {
   router,
   setTradingViewService

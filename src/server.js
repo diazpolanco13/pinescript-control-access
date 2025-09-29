@@ -8,6 +8,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const path = require('path');
+const axios = require('axios');
 
 const config = require('../config');
 const { logger } = require('./utils/logger');
@@ -77,16 +78,18 @@ app.get('/', (req, res) => {
     version: '2.0.0',
     status: 'running',
     timestamp: new Date().toISOString(),
-    endpoints: {
-      health: 'GET /',
-      validate: 'GET /api/validate/:username',
-      access: 'GET|POST|DELETE /api/access/:username',
-      bulk: 'POST /api/access/bulk (OPTIMIZED + PROTECTED)',
-      bulkRemove: 'POST /api/access/bulk-remove (PROTECTED)',
-      replace: 'POST /api/access/replace (PROTECTED)',
-      metrics: 'GET /api/metrics/stats (E-COMMERCE)',
-      healthCheck: 'GET /api/metrics/health (E-COMMERCE)'
-    }
+      endpoints: {
+        health: 'GET /',
+        validate: 'GET /api/validate/:username',
+        access: 'GET|POST|DELETE /api/access/:username',
+        bulk: 'POST /api/access/bulk (OPTIMIZED + PROTECTED)',
+        bulkRemove: 'POST /api/access/bulk-remove (PROTECTED)',
+        replace: 'POST /api/access/replace (PROTECTED)',
+        profileImage: 'GET /profile/:username (PUBLIC)',
+        admin: 'GET /admin (REQUIRES TOKEN)',
+        metrics: 'GET /api/metrics/stats (E-COMMERCE)',
+        healthCheck: 'GET /api/metrics/health (E-COMMERCE)'
+      }
   });
 });
 
@@ -110,6 +113,64 @@ app.use('/api/validate', validateRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/config', configRoutes);
+
+// Public profile image endpoint (no authentication required)
+app.get('/profile/:username', async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    // 1. Fetch the public TradingView profile page
+    const profileUrl = `https://www.tradingview.com/u/${username}/`;
+
+    const response = await axios.get(profileUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TradingView API)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      },
+      timeout: 10000
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    // 2. Get the HTML content
+    const html = response.data;
+
+    // 3. Extract image URL using regex
+    const imagePattern = /https:\/\/s3\.tradingview\.com\/userpics\/[^"']*/;
+    const imageMatch = html.match(imagePattern);
+
+    if (imageMatch) {
+      // 4. Return success response
+      res.json({
+        success: true,
+        username: username,
+        profile_image: imageMatch[0],
+        source: 'public_profile'
+      });
+    } else {
+      // 5. No image found
+      res.status(404).json({
+        success: false,
+        username: username,
+        profile_image: null,
+        message: 'Profile image not found or user does not exist'
+      });
+    }
+
+  } catch (error) {
+    // 6. Handle errors
+    res.status(500).json({
+      success: false,
+      username: req.params.username,
+      error: 'Failed to fetch profile image',
+      message: error.message
+    });
+  }
+});
+
+// Admin routes (protected endpoints)
 app.use('/admin', adminRoutes);
 
 // Admin panel route
