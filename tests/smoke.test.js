@@ -54,6 +54,7 @@ describe('🚀 Smoke Tests - Core Functionality', () => {
   test('✅ Bulk endpoint accepts proper payload structure', async () => {
     const response = await request(app)
       .post('/api/access/bulk')
+      .set('X-API-Key', 'your_ultra_secure_api_key_2025')
       .send({
         users: ['test'],
         pine_ids: ['PUB;test'],
@@ -68,6 +69,7 @@ describe('🚀 Smoke Tests - Core Functionality', () => {
   test('✅ Bulk endpoint rejects invalid payload', async () => {
     const response = await request(app)
       .post('/api/access/bulk')
+      .set('X-API-Key', 'your_ultra_secure_api_key_2025')
       .send({})
       .expect(400);
 
