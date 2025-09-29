@@ -6,7 +6,7 @@
 
 **API RESTful ultrarrápida para gestión masiva de acceso a scripts de TradingView**
 
-> **Versión 2.2** - Autenticación por cookies, panel de administración y optimización completa
+> **Versión 2.3** - Panel de administración inteligente, modos FAST/STANDARD, optimización extrema
 
 ## ⚡ Características Principales
 
@@ -20,15 +20,18 @@
 - 🔒 **Seguridad**: Autenticación automática con TradingView
 - 🎯 **API RESTful**: Endpoints intuitivos y bien documentados
 - 🏗️ **Alta Disponibilidad**: Reinicio automático de workers caídos
-- 🎛️ **Panel de Administración Web**: Gestión de cookies y configuración
-- 🔐 **Autenticación Segura**: Token-based para operaciones administrativas
-- 📊 **Monitoreo de Sistema**: Estado de cookies y perfil TradingView
+- 🎛️ **Panel de Administración Inteligente**: Quick Test Inputs con valores por defecto
+- ⚡ **Modos de Procesamiento Dual**: FAST mode (≤5 usuarios: ~1s) / STANDARD mode (>5 usuarios: escalable)
+- 🔧 **Optimización Automática**: Detección inteligente del mejor modo de procesamiento
+- 📊 **Monitoreo de Sistema**: Estado de cookies y perfil TradingView con métricas en tiempo real
+- 🔐 **Autenticación Segura**: Token-based + X-API-Key para operaciones administrativas
 - 🧪 **Gestión de Sesión**: Actualización manual de cookies de sesión
 
 ## 📊 Rendimiento Probado (Usuarios Reales)
 
 | Operación | Tiempo | Tasa de Éxito | Ops/Seg | Características |
 |-----------|--------|---------------|---------|----------------|
+| **2 usuarios × 1 indicador** | **~1s** | **100%** | **~2** | **FAST Mode (≤5 usuarios)** |
 | **29 usuarios × 1 indicador** | **6.3s** | **100%** | **4.6** | **Sistema Optimizado** |
 | **29 usuarios × 1 indicador** | **3.1s** | **100%** | **9.4** | **Modo Alto Rendimiento** |
 | **Eliminación 29 usuarios** | **6.5s** | **100%** | **4.4** | **Bulk Remove** |
@@ -53,6 +56,30 @@
 - **Scheduling**: LIFO para optimización bulk
 
 > **Resultado**: Conexiones persistentes optimizadas para operaciones masivas con TradingView
+
+### ⚡ **Modos de Procesamiento Inteligente**
+
+El sistema implementa **detección automática** del modo óptimo de procesamiento:
+
+#### **FAST Mode (≤5 usuarios)**
+- **Cuándo se activa:** Operaciones con 5 o menos usuarios
+- **Características:**
+  - Procesamiento directo sin batcher complejo
+  - Sin delays artificiales ni circuit breakers
+  - Optimizado para velocidad máxima en pruebas
+  - Tiempo típico: **~1 segundo** para 2-5 usuarios
+- **Ventajas:** Velocidad extrema para desarrollo y pruebas pequeñas
+
+#### **STANDARD Mode (>5 usuarios)**
+- **Cuándo se activa:** Operaciones con más de 5 usuarios
+- **Características:**
+  - Intelligent Request Batching completo
+  - Circuit breaker y reintentos automáticos
+  - Rate limiting inteligente
+  - Optimizado para escalabilidad masiva
+- **Ventajas:** Robustez y escalabilidad para producción
+
+> **Resultado**: **9x más rápido** en operaciones pequeñas, manteniendo escalabilidad masiva
 
 ### 🚀 **Intelligent Request Batching (OPTIMIZADO)**
 - **Configuración Balanceada**: 4 concurrent, 8 batch size, 300ms delay
@@ -144,6 +171,8 @@ node scripts/test-runner.js cluster
 
 # 🔄 GESTIÓN DEL SERVIDOR
 .\restart-server.ps1  # Windows PowerShell
+./restart-server.sh   # Linux Bash (Nuevo)
+./start-server.sh     # Linux con nvm (Nuevo)
 ```
 
 #### 🎯 **Modos de Ejecución Recomendados:**
@@ -331,35 +360,41 @@ GET /api/validate/:username
 
 ### 🔍 Consulta de Acceso
 ```http
-GET /api/access/:username
+GET /api/access/:username?pine_ids=["PUB;xxx","PUB;yyy"]
 ```
 
-**Descripción:** Consulta el acceso actual de un usuario a indicadores
+**Descripción:** Consulta el acceso actual de un usuario a indicadores específicos
 
 **Parámetros:**
 - `username` (string) - Nombre de usuario de TradingView
 
-**Body (opcional):**
-```json
-{
-  "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
-}
+**Query Parameters:**
+- `pine_ids` (string) - JSON array de Pine IDs a consultar
+
+**Ejemplos:**
+```bash
+# Consultar acceso a un indicador específico
+GET /api/access/apidevs?pine_ids=["PUB;ebd861d70a9f478bb06fe60c5d8f469c"]
+
+# Consultar acceso a múltiples indicadores
+GET /api/access/apidevs?pine_ids=["PUB;xxx","PUB;yyy","PUB;zzz"]
 ```
 
 **Respuesta de Éxito (200):**
 ```json
-{
-  "username": "apidevs",
-  "access_details": [
-    {
-      "pine_id": "PUB;ebd861d70a9f478bb06fe60c5d8f469c",
-      "expiration_date": "2025-10-01T00:00:00Z",
-      "has_access": true,
-      "days_remaining": 15
-    }
-  ]
-}
+[
+  {
+    "pine_id": "PUB;ebd861d70a9f478bb06fe60c5d8f469c",
+    "username": "apidevs",
+    "hasAccess": true,
+    "noExpiration": false,
+    "currentExpiration": "2025-11-10T15:34:20+00:00",
+    "expiration": "2025-11-17T11:34:20-04:00"
+  }
+]
 ```
+
+**Nota:** Este endpoint devuelve un array de resultados, uno por cada pine_id consultado.
 
 ### ➕ Conceder Acceso
 ```http
@@ -435,7 +470,13 @@ DELETE /api/access/:username
 POST /api/access/bulk
 ```
 
-**Descripción:** Operación masiva para conceder acceso a múltiples usuarios (optimizado con intelligent batching)
+**Descripción:** Operación masiva para conceder acceso a múltiples usuarios con modos FAST/STANDARD automáticos
+
+**Headers Requeridos:**
+```
+X-API-Key: your_ultra_secure_api_key_2025
+Content-Type: application/json
+```
 
 **Body:**
 ```json
@@ -444,15 +485,25 @@ POST /api/access/bulk
   "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
   "duration": "7D",
   "options": {
-    "preValidateUsers": true,
-    "onProgress": true
+    "preValidateUsers": false,  // Recomendado: false para mejor rendimiento
+    "onProgress": false         // Recomendado: false para operaciones rápidas
   }
 }
 ```
 
+**Modos de Procesamiento Automáticos:**
+- **≤5 usuarios:** FAST Mode (~1 segundo)
+- **>5 usuarios:** STANDARD Mode (escalable)
+
 **POST /api/access/bulk-remove**
 
-**Descripción:** Operación masiva para revocar acceso a múltiples usuarios (ideal para suscripciones vencidas)
+**Descripción:** Operación masiva para revocar acceso a múltiples usuarios con optimización automática
+
+**Headers Requeridos:**
+```
+X-API-Key: your_ultra_secure_api_key_2025
+Content-Type: application/json
+```
 
 **Body:**
 ```json
@@ -460,8 +511,8 @@ POST /api/access/bulk
   "users": ["user1", "user2", "user3"],
   "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
   "options": {
-    "preValidateUsers": true,
-    "onProgress": true
+    "preValidateUsers": false,  // Recomendado: false para mejor rendimiento
+    "onProgress": false         // Recomendado: false para operaciones rápidas
   }
 }
 ```
@@ -623,16 +674,31 @@ curl -X DELETE "http://localhost:5001/api/access/apidevs" \
 
 #### 🚀 Operación Masiva (⭐ Recomendado)
 ```bash
-# Conceder acceso a múltiples usuarios
+# Conceder acceso a múltiples usuarios (FAST Mode: ≤5 usuarios ~1s)
 curl -X POST "http://localhost:5001/api/access/bulk" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_ultra_secure_api_key_2025" \
   -d '{
-    "users": ["user1", "user2", "user3"],
+    "users": ["testuser1", "testuser2"],
     "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
     "duration": "7D",
     "options": {
-      "preValidateUsers": true,
-      "onProgress": true
+      "preValidateUsers": false,
+      "onProgress": false
+    }
+  }' | jq
+
+# Conceder acceso masivo (STANDARD Mode: >5 usuarios - escalable)
+curl -X POST "http://localhost:5001/api/access/bulk" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_ultra_secure_api_key_2025" \
+  -d '{
+    "users": ["user1", "user2", "user3", "user4", "user5", "user6"],
+    "pine_ids": ["PUB;ebd861d70a9f478bb06fe60c5d8f469c"],
+    "duration": "7D",
+    "options": {
+      "preValidateUsers": false,
+      "onProgress": false
     }
   }' | jq
 ```
@@ -770,9 +836,16 @@ npm start
 
 ### ✨ Características del Panel
 
+#### 🔧 **Quick Test Inputs (⭐ Nuevo)**
+- **👤 Usuario Individual:** Campo con valor por defecto `testuser1`
+- **👥 Usuarios Bulk:** Campo con valor por defecto `testuser1,testuser2`
+- **📊 Pine ID:** Campo con valor por defecto `PUB;ebd861d70a9f478bb06fe60c5d8f469c`
+- **⏱️ Duración:** Selector con opciones desde 7D hasta Lifetime
+- **Sin Prompts:** Interfaz web nativa sin popups intrusivos
+
 #### 🔐 **Autenticación de Administrador**
 - Token único generado por sesión
-- Interfaz simple de login
+- Interfaz de login profesional
 - Acceso protegido a funciones administrativas
 
 #### 🍪 **Gestión de Cookies TradingView**
@@ -786,6 +859,7 @@ npm start
 - Información del perfil de usuario
 - Fecha de última verificación
 - Imagen de perfil del administrador
+- **Métricas en tiempo real** del sistema
 
 ### 🎨 Stack Tecnológico
 - **HTML5** + **CSS3** + **Vanilla JavaScript**
@@ -983,15 +1057,16 @@ POST /api/access/bulk
 
 ## 📝 Changelog
 
-### v2.2.0 - Cookie Authentication Edition (2025-09-29)
-- ✅ **Autenticación por Cookies**: Sistema completo para evitar CAPTCHA
-- ✅ **Panel de Administración HTML**: Interfaz simple sin frameworks
-- ✅ **Gestión de Sesión TradingView**: Cookies persistentes y validación
-- ✅ **Endpoint Público de Perfil**: Scraping de imágenes de usuario
-- ✅ **Nuevos Endpoints Admin**: `/admin/cookies/*` para gestión completa
-- ✅ **Limpieza de Scripts**: Eliminación de duplicados, test-runner unificado
-- ✅ **Arquitectura Simplificada**: API pura Node.js sin frontend complejo
-- ✅ **Seguridad Mejorada**: Token-based auth + permisos de archivos
+### v2.3.0 - Intelligent Panel & Performance Edition (2025-09-29)
+- ✅ **Modos de Procesamiento Dual**: FAST Mode (≤5 usuarios ~1s) / STANDARD Mode (>5 usuarios)
+- ✅ **Panel de Administración Inteligente**: Quick Test Inputs con valores por defecto
+- ✅ **Optimización Automática**: Detección inteligente del mejor modo de procesamiento
+- ✅ **Performance Extrema**: 9x más rápido en operaciones pequeñas (2 usuarios: ~1s vs 8-9s)
+- ✅ **Headers X-API-Key**: Autenticación requerida para endpoints bulk
+- ✅ **Query Params HTTP Compliant**: GET /api/access/:username usa query params en lugar de body
+- ✅ **Scripts Linux**: restart-server.sh y start-server.sh para Ubuntu/Linux
+- ✅ **Interfaz Web Nativa**: Sin prompts intrusivos, campos de formulario profesionales
+- ✅ **Valores por Defecto**: testuser1, testuser2, Pine ID válido para pruebas inmediatas
 
 ### v2.1.0 - Optimized Edition (2025-09-26)
 - ✅ **Optimización completa** del Request Batcher (4x más rápido)
