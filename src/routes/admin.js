@@ -5,8 +5,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { requireAdminToken, validateAdminToken } = require('../utils/adminAuth');
+const { requireAdminToken, validateAdminToken, getCurrentAdminToken } = require('../utils/adminAuth');
 const { apiLogger } = require('../utils/logger');
+const { apiAuth } = require('../middleware/apiAuth');
 
 // Importar TradingView service para gestión de cookies
 let tradingViewService = null;
@@ -15,6 +16,48 @@ let tradingViewService = null;
 function setTradingViewService(service) {
   tradingViewService = service;
 }
+
+/**
+ * GET /admin/get-token
+ * Obtener token admin usando X-API-Key (accesible remotamente)
+ * 
+ * Este endpoint permite obtener el token admin desde cualquier lugar
+ * usando la X-API-Key existente (la misma que usa el e-commerce)
+ * 
+ * @requires X-API-Key header
+ * @returns {object} Token de administrador actual
+ */
+router.get('/get-token', apiAuth, (req, res) => {
+  try {
+    const token = getCurrentAdminToken();
+    
+    if (!token) {
+      return res.status(500).json({
+        error: 'Token no disponible',
+        message: 'El servidor no ha generado un token admin'
+      });
+    }
+    
+    apiLogger.info({
+      ip: req.ip || req.connection.remoteAddress,
+      method: 'GET /admin/get-token'
+    }, 'Admin token retrieved via API Key');
+    
+    res.json({
+      success: true,
+      token: token,
+      message: 'Token admin obtenido exitosamente',
+      usage: 'Usa este token con X-Admin-Token header o en el panel /admin',
+      expiresOn: 'Cambia cada vez que se reinicia el servidor'
+    });
+  } catch (error) {
+    apiLogger.error({ error: error.message }, 'Error getting admin token');
+    res.status(500).json({
+      error: 'Error interno',
+      message: error.message
+    });
+  }
+});
 
 /**
  * POST /admin/login

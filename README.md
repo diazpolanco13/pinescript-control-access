@@ -6,7 +6,7 @@
 
 **API RESTful ultrarrápida para gestión masiva de acceso a scripts de TradingView**
 
-> **Versión 2.3** - Panel de administración inteligente, modos FAST/STANDARD, optimización extrema
+> **Versión 2.3.1** - Fix crítico hasAccess en Bulk API, panel de administración inteligente, optimización extrema
 
 ## ⚡ Características Principales
 
@@ -1250,6 +1250,16 @@ POST /api/access/bulk
 - **Solución**: Reiniciar servidor - login automático se ejecuta nuevamente
 
 ## 📝 Changelog
+
+### v2.3.1 - Critical Bug Fix Edition (2025-10-06)
+- 🐛 **CRÍTICO: Fix hasAccess bug en TODOS los endpoints de grant** - Resuelto problema donde `status: "Success"` pero `hasAccess: false`
+- ✅ Endpoints corregidos: `POST /api/access/:username`, `POST /api/access/bulk`, `POST /api/access/replace`
+- ✅ `addAccess()` ahora actualiza correctamente `hasAccess: true` después de conceder acceso
+- ✅ `currentExpiration` se actualiza correctamente a la nueva fecha
+- ✅ E-commerce integrations ahora reciben información precisa de acceso
+- 🧪 Scripts de testing: `scripts/test-bulk-fix.js` y `scripts/test-all-grant-endpoints.js`
+- 📝 Documentación completa del fix en `docs/FIX-BULK-HASACCESS-BUG.md`
+- ✅ Sin breaking changes - totalmente backward compatible
 
 ### v2.5.0 - Enterprise HA & Persistence Edition (2025-09-30)
 - ✅ **Alta Disponibilidad Enterprise**: PM2 clustering con 2+ instancias simultáneas

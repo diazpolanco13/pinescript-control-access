@@ -414,6 +414,19 @@ class TradingViewService {
         accessDetails.status = (response.status === 200 || response.status === 201)
           ? 'Success'
           : 'Failure';
+        
+        // ✅ FIX: Update hasAccess and currentExpiration after successful grant
+        // This fixes the bug where status was "Success" but hasAccess remained false
+        if (accessDetails.status === 'Success') {
+          accessDetails.hasAccess = true;
+          accessDetails.currentExpiration = accessDetails.expiration;
+          
+          apiLogger.debug({
+            username: accessDetails.username,
+            pineId: accessDetails.pine_id,
+            newExpiration: accessDetails.expiration
+          }, 'Access successfully granted and updated');
+        }
       }
 
       return accessDetails;
