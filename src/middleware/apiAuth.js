@@ -26,7 +26,8 @@ const apiAuth = (req, res, next) => {
   }
   
   // Verificar IP whitelist (opcional)
-  const allowedIPs = process.env.ALLOWED_IPS?.split(',') || [];
+  const allowedIPsRaw = process.env.ALLOWED_IPS?.trim();
+  const allowedIPs = allowedIPsRaw ? allowedIPsRaw.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0) : [];
   if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
     logger.warn({
       ip: clientIP,
