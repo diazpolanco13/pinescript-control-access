@@ -82,6 +82,7 @@ app.get('/', (req, res) => {
         health: 'GET /',
         documentation: 'GET /doc-endpoint (AI-READABLE DOCS)',
         admin: 'GET /admin (REQUIRES TOKEN)',
+        adminToken: 'GET /admin-token (LOCALHOST ONLY - GET ADMIN TOKEN)',
         validate: 'GET /api/validate/:username',
         access: 'GET|POST|DELETE /api/access/:username',
         bulk: 'POST /api/access/bulk (OPTIMIZED + PROTECTED)',
@@ -514,7 +515,10 @@ Content-Type: application/json
                     <div class="space-y-3 text-sm">
                         <div>
                             <strong>¿Dónde obtenerlo?</strong><br>
-                            <span class="text-gray-300">Se muestra en la consola del servidor al iniciar</span>
+                            <span class="text-gray-300">3 formas de obtener el token:</span><br>
+                            <code class="bg-gray-700 px-2 py-1 rounded text-xs mt-1 block">1. Consola del servidor (al iniciar)</code><br>
+                            <code class="bg-gray-700 px-2 py-1 rounded text-xs mt-1 block">2. Archivo: admin-token.txt</code><br>
+                            <code class="bg-gray-700 px-2 py-1 rounded text-xs mt-1 block">3. Endpoint: /admin-token (localhost)</code>
                         </div>
                         <div>
                             <strong>¿Cómo usarlo?</strong><br>
@@ -597,8 +601,9 @@ Content-Type: application/json
                         <div class="flex items-start space-x-3">
                             <span class="bg-indigo-500 text-white px-2 py-1 rounded text-sm font-bold">2</span>
                             <div>
-                                <strong>Copiar token admin:</strong><br>
-                                <span class="text-gray-300">Aparece en consola del servidor</span>
+                                <strong>Obtener token admin:</strong><br>
+                                <code class="bg-gray-700 px-2 py-1 rounded text-sm">npm run get-token</code><br>
+                                <span class="text-gray-400 text-xs">O usa: curl http://localhost:5001/admin-token</span>
                             </div>
                         </div>
                         <div class="flex items-start space-x-3">
@@ -642,6 +647,12 @@ Content-Type: application/json
                         <h4 class="text-lg font-semibold text-purple-400 mb-3">🎛️ Verificar Estado Admin</h4>
                         <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl -H "X-Admin-Token: [tu_token]" \\
   "http://185.218.124.241:5001/admin/cookies/status"</code></pre>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h4 class="text-lg font-semibold text-orange-400 mb-3">🔑 Obtener Token Admin</h4>
+                        <pre class="bg-gray-900 p-3 rounded text-xs text-cyan-400"><code>curl "http://localhost:5001/admin-token"</code></pre>
+                        <span class="text-xs text-gray-400">También: npm run get-token</span>
                     </div>
                 </div>
             </div>
@@ -776,6 +787,36 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
+// Admin token endpoint (solo desde localhost para seguridad)
+app.get('/admin-token', (req, res) => {
+  const clientIP = req.ip || req.connection.remoteAddress;
+
+  // Solo permitir acceso desde localhost/127.0.0.1
+  if (clientIP !== '127.0.0.1' && clientIP !== '::1' && !clientIP.includes('127.0.0.1')) {
+    return res.status(403).json({
+      error: 'Acceso denegado',
+      message: 'Este endpoint solo es accesible desde localhost'
+    });
+  }
+
+  const { getCurrentAdminToken } = require('./utils/adminAuth');
+  const token = getCurrentAdminToken();
+
+  if (!token) {
+    return res.status(404).json({
+      error: 'Token no disponible',
+      message: 'El servidor aún no ha inicializado completamente'
+    });
+  }
+
+  res.json({
+    admin_token: token,
+    message: 'Token de administrador actual',
+    timestamp: new Date().toISOString(),
+    note: 'Guarda este token para acceder al panel de administración'
+  });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -783,6 +824,7 @@ app.use((req, res) => {
     message: `Cannot ${req.method} ${req.path}`,
     availableEndpoints: [
       'GET /',
+      'GET /admin-token (LOCALHOST ONLY)',
       'GET /api/validate/:username',
       'GET /api/access/:username',
       'POST /api/access/bulk-remove',

@@ -4,6 +4,8 @@
  */
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 // Token admin generado al iniciar la aplicación (similar al Python)
 let currentAdminToken = null;
@@ -22,9 +24,23 @@ function generateAdminToken() {
  */
 function initAdminAuth() {
   currentAdminToken = generateAdminToken();
-  console.log('🔐 Admin token generado para esta sesión:');
-  console.log(`   ${currentAdminToken}`);
-  console.log('   Usa este token para acceder al panel de administración');
+
+  // Guardar token en archivo para acceso fácil con PM2
+  const tokenFilePath = path.join(__dirname, '../../admin-token.txt');
+  try {
+    fs.writeFileSync(tokenFilePath, currentAdminToken, 'utf8');
+    console.log('🔐 Admin token generado para esta sesión:');
+    console.log(`   ${currentAdminToken}`);
+    console.log(`   📄 Token guardado en: ${tokenFilePath}`);
+    console.log('   Usa este token para acceder al panel de administración');
+    console.log('   💡 También puedes obtenerlo desde: http://localhost:5001/admin-token');
+  } catch (error) {
+    console.error('⚠️ Error al guardar token en archivo:', error.message);
+    console.log('🔐 Admin token generado para esta sesión:');
+    console.log(`   ${currentAdminToken}`);
+    console.log('   Usa este token para acceder al panel de administración');
+  }
+
   return currentAdminToken;
 }
 

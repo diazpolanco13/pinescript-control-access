@@ -29,7 +29,8 @@
     "calibrate": "node scripts/calibration-test.js",
     "test:adaptive": "node scripts/test-remove-grant.js",
     "apply:adaptive": "node scripts/apply-adaptive-config.js",
-    "diagnose": "node scripts/diagnose-issue.js"
+    "diagnose": "node scripts/diagnose-issue.js",
+    "get-token": "node scripts/get-admin-token.js"
   },
   "keywords": [
     "tradingview",
