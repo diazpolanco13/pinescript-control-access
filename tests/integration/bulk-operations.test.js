@@ -83,7 +83,7 @@ describe('🔗 Bulk Operations Integration', () => {
 
       const response = await request(app)
         .post('/api/access/bulk')
-        .set('X-API-Key', 'your_ultra_secure_api_key_2025') // Add API key
+        .set('X-API-Key', '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea') // Production API key
         .send({
           users,
           pine_ids: pineIds,
@@ -118,7 +118,7 @@ describe('🔗 Bulk Operations Integration', () => {
     test('should handle invalid parameters gracefully', async () => {
       const response = await request(app)
         .post('/api/access/bulk')
-        .set('X-API-Key', 'your_ultra_secure_api_key_2025')
+        .set('X-API-Key', '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea')
         .send({
           users: [],
           pine_ids: [],
@@ -139,7 +139,7 @@ describe('🔗 Bulk Operations Integration', () => {
       for (const testCase of testCases) {
         const response = await request(app)
           .post('/api/access/bulk')
-          .set('X-API-Key', 'your_ultra_secure_api_key_2025')
+          .set('X-API-Key', '92a1e4a8c74e1871c658301f3e8ae31c31ed6bfd68629059617fac621932e1ea')
           .send(testCase)
           .expect(400);
 
